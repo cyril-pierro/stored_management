@@ -1,0 +1,18 @@
+[tool.poetry]
+name = "store-management-system"
+version = "0.1.0"
+description = "Application to manage store products"
+authors = ["cyril-pierro <fiopapa32@gmail.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.11"
+sqlalchemy = "^2.0.32"
+pydantic-settings = "^2.4.0"
+fastapi = "^0.112.0"
+fastapi-pagination = "^0.12.26"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
