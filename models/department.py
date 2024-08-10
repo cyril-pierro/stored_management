@@ -13,6 +13,7 @@ class Department(Base):
     id = Column(sq.Integer, primary_key=True, unique=True, index=True)
     name = Column(sq.String(200), nullable=False, unique=True)
     staff = relationship("Staff", back_populates="department")
+    stock_adjustments = relationship("StockAdjustment", back_populates="department")
     created_at = Column(sq.DateTime, default=datetime.datetime.now(datetime.UTC))
 
     def save(self) -> "Department":

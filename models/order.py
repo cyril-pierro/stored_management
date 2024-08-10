@@ -13,14 +13,13 @@ class Orders(Base):
     __tablename__ = "orders"
     id = Column(sq.Integer, primary_key=True, unique=True, index=True)
     staff_id = Column(sq.Integer, ForeignKey("staff.id"))
-    stock_id = Column(sq.Integer, ForeignKey("stock.id"))
+    barcode = Column(sq.String, index=True)
     job_number = Column(sq.String, nullable=False)
     quantity = Column(sq.Integer)
     restrictions = Column(
         sq.Enum(OrderStatus), nullable=False, default=OrderStatus.part_available.name
     )
     staff = relationship("Staff", foreign_keys=[staff_id], back_populates="orders")
-    stock = relationship("Stock", foreign_keys=[stock_id], back_populates="orders")
     created_at = Column(sq.DateTime, default=datetime.datetime.now(datetime.UTC))
 
     def save(self) -> "Orders":
@@ -34,6 +33,7 @@ class Orders(Base):
         return {
             "id": f"#-{self.id}",
             "staff": self.staff.name,
+            "barcode": self.barcode,
             "job_number": self.job_number,
             "quantity": self.quantity,
             "restrictions": self.restrictions.value,

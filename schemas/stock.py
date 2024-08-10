@@ -17,3 +17,7 @@ class StockOut(StockIn):
 class StockAdjustmentIn(BaseModel):
     department_id: int
     quantity: int
+
+
+class UpdateStockAdjustmentIn(StockAdjustmentIn):
+    barcode: str

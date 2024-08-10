@@ -12,11 +12,13 @@ class StockAdjustment(Base):
     __tablename__ = "stock_adjustments"
     id = Column(sq.Integer, primary_key=True, unique=True, index=True)
     quantity = Column(sq.Integer, nullable=False, default=0)
-    stock_id = Column(sq.Integer, ForeignKey("stock.id"))
+    barcode = Column(sq.String, nullable=False, index=True)
     department_id = Column(sq.Integer, ForeignKey("department.id"))
+    created_by = Column(sq.Integer, ForeignKey("staff.id"))
+    updated_by = Column(sq.Integer, ForeignKey("staff.id"))
     department = relationship("Department", back_populates="stock_adjustments")
-    stock = relationship("Stock", back_populates="stock_adjustments")
     created_at = Column(sq.DateTime, default=datetime.datetime.now(datetime.UTC))
+    updated_at = Column(sq.DateTime, default=datetime.datetime.now(datetime.UTC))
 
     def save(self) -> "StockAdjustment":
         with DBSession() as db:
@@ -29,7 +31,10 @@ class StockAdjustment(Base):
         return {
             "id": self.id,
             "quantity": self.quantity,
-            "department": self.department.name,
-            "stock": [a.json() for a in self.stock],
+            "department_id": self.department_id,
+            "barcode": self.barcode,
+            "created_by": self.created_by,
+            "updated_by": self.updated_by,
             "created_at": self.created_at.isoformat(),
+            "updated_at": self.updated_at.isoformat(),
         }
