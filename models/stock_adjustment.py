@@ -12,11 +12,16 @@ class StockAdjustment(Base):
     __tablename__ = "stock_adjustments"
     id = Column(sq.Integer, primary_key=True, unique=True, index=True)
     quantity = Column(sq.Integer, nullable=False, default=0)
-    barcode = Column(sq.String, nullable=False, index=True)
+    barcode_id = Column(sq.Integer, ForeignKey("barcode.id"), nullable=False)
     department_id = Column(sq.Integer, ForeignKey("department.id"))
     created_by = Column(sq.Integer, ForeignKey("staff.id"))
     updated_by = Column(sq.Integer, ForeignKey("staff.id"))
-    department = relationship("Department", back_populates="stock_adjustments")
+    barcode = relationship(
+        "Barcode", lazy="selectin", back_populates="stock_adjustments"
+    )
+    department = relationship(
+        "Department", lazy="selectin", back_populates="stock_adjustments"
+    )
     created_at = Column(sq.DateTime, default=datetime.datetime.now(datetime.UTC))
     updated_at = Column(sq.DateTime, default=datetime.datetime.now(datetime.UTC))
 

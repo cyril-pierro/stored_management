@@ -1,5 +1,7 @@
 from typing import Union
 
+from fastapi.security import HTTPBearer
+
 from schemas.error import (BadRequestError, ForbiddenError,
                            InternalProcessError, InvalidToken,
                            NotAuthenticatedError, NotFoundError,
@@ -13,3 +15,5 @@ responses = {
     400: {"model": Union[BadRequestError, InvalidToken]},
     500: {"model": InternalProcessError},
 }
+
+bearer_schema = HTTPBearer()

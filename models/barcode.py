@@ -1,7 +1,7 @@
 import datetime
 
 import sqlalchemy as sq
-from sqlalchemy import Column, ForeignKey
+from sqlalchemy import Column
 from sqlalchemy.orm import relationship
 
 from core.setup import Base
@@ -15,9 +15,41 @@ class Barcode(Base):
     code = Column(sq.String, index=True)
     specification = Column(sq.String)
     location = Column(sq.String)
-    quantity = Column(sq.Integer)
-    cost = Column(sq.Float, nullable=False, default=0.0)
-    stock = relationship("Stock", back_populates="barcode", passive_deletes="all", passive_updates=True)
+    stock = relationship(
+        "Stock",
+        back_populates="barcode",
+        passive_deletes="all",
+        passive_updates=True,
+        lazy="selectin",
+    )
+    stock_adjustments = relationship(
+        "StockAdjustment",
+        back_populates="barcode",
+        passive_deletes="all",
+        passive_updates=True,
+        lazy="subquery",
+    )
+    stock_out = relationship(
+        "StockOut",
+        back_populates="barcode",
+        passive_deletes="all",
+        passive_updates=True,
+        lazy="subquery",
+    )
+    stock_running = relationship(
+        "StockRunning",
+        back_populates="barcode",
+        passive_deletes="all",
+        passive_updates=True,
+        lazy="subquery",
+    )
+    orders = relationship(
+        "Orders",
+        back_populates="barcode",
+        passive_deletes="all",
+        passive_updates=True,
+        lazy="subquery",
+    )
     created_at = Column(sq.DateTime, default=datetime.datetime.now(datetime.UTC))
 
     def save(self):
@@ -26,7 +58,7 @@ class Barcode(Base):
             db.commit()
             db.refresh(self)
             return self
-    
+
     def json(self):
         return {
             "id": self.id,
@@ -35,10 +67,9 @@ class Barcode(Base):
             "specification": self.specification,
             "location": self.location,
             "quantity": self.quantity,
-            "cost": self.cost,
             "created_at": self.created_at.isoformat(),
         }
-    
+
     @staticmethod
     def get_last_stock():
         with DBSession() as db:

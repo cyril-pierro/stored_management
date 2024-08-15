@@ -1,117 +1,209 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
 
+from controllers.auth import Auth
+from controllers.operations import StaffOperator
 from controllers.order import OrderOperator
 from controllers.stock import StockOperator
 from controllers.stock_adjustment import StockAdjustmentOperator as SA
 from controllers.stock_out import StockOutOperator
 from controllers.stock_running import StockRunningOperator as SR
-from schemas.stock import StockAdjustmentIn, StockIn, UpdateStockAdjustmentIn
+from error import AppError
+from schemas.operations import SuccessOut
+from schemas.order import OrderOut
+from schemas.stock import (Barcode, RunningStockOut, StockAdjustmentGroupOut,
+                           StockAdjustmentIn, StockAdjustmentOut, StockIn,
+                           StockOut, StockOutOut, UpdateStockAdjustmentIn)
+from utils.common import bearer_schema
 
+PERMISSION_ERROR = "You do not have permission to perform this operation"
 op_router = APIRouter()
 
 
-@op_router.get("/stock/{id}")
-def get_stock_by_id(id: int):
+@op_router.get("/barcodes", response_model=list[Barcode])
+async def get_available_barcodes(access_token: str = Depends(bearer_schema)):
+    staff_id = Auth.verify_token(token=access_token.credentials, for_="login")
+    if StaffOperator.has_stock_controller_permission(
+        staff_id=staff_id
+    ) or StaffOperator.has_engineer_permission(staff_id):
+        return StockOperator.get_all_barcodes()
+    raise AppError(message=PERMISSION_ERROR, status_code=401)
+
+
+@op_router.get("/stock/{id}", response_model=StockOut)
+async def get_stock_by_id(id: int, access_token: str = Depends(bearer_schema)):
+    staff_id = Auth.verify_token(token=access_token.credentials, for_="login")
+    if not StaffOperator.has_stock_controller_permission(staff_id=staff_id):
+        raise AppError(message=PERMISSION_ERROR, status_code=401)
     stock = StockOperator.get_stock_by(id)
     if not stock:
         raise ValueError("Stock not found")
-    return stock.json()
+    return stock
 
 
-@op_router.get("/stock/barcode/{barcode}")
-def get_stock_by_barcode(barcode: str):
+@op_router.get("/stock/barcode/{barcode}", response_model=StockOut)
+async def get_stock_by_barcode(
+    barcode: str, access_token: str = Depends(bearer_schema)
+):
+    staff_id = Auth.verify_token(token=access_token.credentials, for_="login")
+    if not StaffOperator.has_stock_controller_permission(staff_id=staff_id):
+        raise AppError(message=PERMISSION_ERROR, status_code=401)
     stock = StockOperator.get_stock_by(barcode)
     if not stock:
         raise ValueError(f"Stock with barcode {barcode} not found")
     return stock.json()
 
 
-@op_router.get("/stock-in/history")
-def get_all_stocks_delivered():
+@op_router.get("/stock-in/history", response_model=list[StockOut])
+async def get_all_stocks_delivered(access_token: str = Depends(bearer_schema)):
+    staff_id = Auth.verify_token(token=access_token.credentials, for_="login")
+    if not StaffOperator.has_stock_controller_permission(staff_id=staff_id):
+        raise AppError(message=PERMISSION_ERROR, status_code=401)
     return StockOperator.get_all_stocks()
 
 
-@op_router.get("/stock-in")
-def get_all_stocks_per_barcode():
+@op_router.get("/stock-in", response_model=list[Barcode])
+async def get_all_stocks_per_barcode(access_token: str = Depends(bearer_schema)):
+    staff_id = Auth.verify_token(token=access_token.credentials, for_="login")
+    if not StaffOperator.has_stock_controller_permission(staff_id=staff_id):
+        raise AppError(message=PERMISSION_ERROR, status_code=401)
     return StockOperator.group_all_stock_barcode()
 
 
-@op_router.get("/stock-in/{barcode}")
-def get_all_stocks_per_barcode_with_specific_barcode(barcode: str):
+@op_router.get("/stock-in/{barcode}", response_model=Barcode)
+async def get_all_stocks_per_barcode_with_specific_barcode(
+    barcode: str, access_token: str = Depends(bearer_schema)
+):
+    staff_id = Auth.verify_token(token=access_token.credentials, for_="login")
+    if not StaffOperator.has_stock_controller_permission(staff_id=staff_id):
+        raise AppError(message=PERMISSION_ERROR, status_code=401)
     value = StockOperator.get_grouped_stocks_with_stock_barcode(barcode)
     if not value:
         raise ValueError("Could not find stock with barcode")
     return value
 
 
-@op_router.post("/stock")
-def create_stock(data: StockIn):
-    return StockOperator.add_stock(data).json()
+@op_router.post("/stock", response_model=StockOut)
+async def create_stock(data: StockIn, access_token: str = Depends(bearer_schema)):
+    staff_id = Auth.verify_token(token=access_token.credentials, for_="login")
+    if not StaffOperator.has_stock_controller_permission(staff_id=staff_id):
+        raise AppError(message=PERMISSION_ERROR, status_code=401)
+    return StockOperator.add_stock(data, staff_id)
 
 
-@op_router.put("/stock/{id}")
-def update_stock_info(id: int, data: StockIn):
-    return StockOperator.update_stock(id, data)
+@op_router.put("/stock/{id}", response_model=StockOut)
+async def update_stock_info(
+    id: int, data: StockIn, access_token: str = Depends(bearer_schema)
+):
+    staff_id = Auth.verify_token(token=access_token.credentials, for_="login")
+    if not StaffOperator.has_stock_controller_permission(staff_id=staff_id):
+        raise AppError(message=PERMISSION_ERROR, status_code=401)
+    return StockOperator.update_stock(id, data, staff_id).json()
 
 
-@op_router.delete("/stock/{id}")
-def delete_stock(id: int):
+@op_router.delete("/stock/{id}", response_model=SuccessOut)
+async def delete_stock(id: int, access_token: str = Depends(bearer_schema)):
+    staff_id = Auth.verify_token(token=access_token.credentials, for_="login")
+    if not StaffOperator.has_stock_controller_permission(staff_id=staff_id):
+        raise AppError(message=PERMISSION_ERROR, status_code=401)
     status = StockOperator.remove_stock(id)
     if status:
         return {"message": "Stock has been removed from the store"}
 
 
-@op_router.get("/stock-out/history")
-def get_stock_outs():
+@op_router.get("/stock-out/history", response_model=list[StockOutOut])
+async def get_stock_outs(access_token: str = Depends(bearer_schema)):
+    staff_id = Auth.verify_token(token=access_token.credentials, for_="login")
+    if not StaffOperator.has_stock_controller_permission(staff_id=staff_id):
+        raise AppError(message=PERMISSION_ERROR, status_code=401)
     return StockOutOperator.get_all_stocks()
 
 
-@op_router.get("/stock-out")
-def get_stock_out_group_data():
+@op_router.get("/stock-out", response_model=list[Barcode])
+async def get_stock_out_group_data(access_token: str = Depends(bearer_schema)):
+    staff_id = Auth.verify_token(token=access_token.credentials, for_="login")
+    if not StaffOperator.has_stock_controller_permission(staff_id=staff_id):
+        raise AppError(message=PERMISSION_ERROR, status_code=401)
     return StockOutOperator.group_all_stock_ids_data()
 
 
-@op_router.get("/stock-out/{stock_id}")
-def get_stock_out_group_data_by_id(stock_id: int):
+@op_router.get("/stock-out/{stock_id}", response_model=Barcode)
+async def get_stock_out_group_data_by_id(
+    stock_id: int, access_token: str = Depends(bearer_schema)
+):
+    staff_id = Auth.verify_token(token=access_token.credentials, for_="login")
+    if not StaffOperator.has_stock_controller_permission(staff_id=staff_id):
+        raise AppError(message=PERMISSION_ERROR, status_code=401)
     value = StockOutOperator.get_group_all_stock_ids_data_by_stock_id(stock_id)
     if not value:
         raise ValueError("Stock out record not found")
     return value
 
 
-@op_router.post("/stock-adjustment/{barcode}")
-def create_stock_adjustment(barcode: str, data: StockAdjustmentIn):
-    return SA.create_stock_adjustment(barcode, data).json()
+@op_router.post(
+    "/stock-adjustment/{barcode}",
+    response_model=StockAdjustmentOut,
+)
+async def create_stock_adjustment(
+    barcode: str, data: StockAdjustmentIn, access_token: str = Depends(bearer_schema)
+):
+    staff_id = Auth.verify_token(token=access_token.credentials, for_="login")
+    if not StaffOperator.has_stock_controller_permission(staff_id=staff_id):
+        raise AppError(message=PERMISSION_ERROR, status_code=401)
+    return SA.create_stock_adjustment(barcode, data, staff_id).json()
 
 
-@op_router.get("/stock-adjustment/history")
-def get_stock_adjustment_history():
+@op_router.get("/stock-adjustment/history", response_model=list[StockAdjustmentOut])
+async def get_stock_adjustment_history(access_token: str = Depends(bearer_schema)):
+    staff_id = Auth.verify_token(token=access_token.credentials, for_="login")
+    if not StaffOperator.has_stock_controller_permission(staff_id=staff_id):
+        raise AppError(message=PERMISSION_ERROR, status_code=401)
     return SA.get_all_stock_adjustments()
 
 
-@op_router.get("/stock-adjustment")
-def get_stock_adjustment_grouped():
+@op_router.get("/stock-adjustment", response_model=list[StockAdjustmentGroupOut])
+async def get_stock_adjustment_grouped(access_token: str = Depends(bearer_schema)):
+    staff_id = Auth.verify_token(token=access_token.credentials, for_="login")
+    if not StaffOperator.has_stock_controller_permission(staff_id=staff_id):
+        raise AppError(message=PERMISSION_ERROR, status_code=401)
     return SA.group_all_stock_adjustments_for_stocks()
 
 
-@op_router.get("/stock-adjustment/{barcode}")
-def get_stock_adjustment_grouped_by_stock_id(barcode: str):
+@op_router.get("/stock-adjustment/{barcode}", response_model=StockAdjustmentGroupOut)
+async def get_stock_adjustment_grouped_by_stock_id(
+    barcode: str, access_token: str = Depends(bearer_schema)
+):
+    staff_id = Auth.verify_token(token=access_token.credentials, for_="login")
+    if not StaffOperator.has_stock_controller_permission(staff_id=staff_id):
+        raise AppError(message=PERMISSION_ERROR, status_code=401)
     value = SA.get_grouped_stock_adjustments_by_barcode(barcode)
     if not value:
         raise ValueError("Stock Adjustment record does not exist")
     return value
 
 
-@op_router.put("/stock-adjustment/{id}")
-def edit_stock_adjustment(id: int, data: UpdateStockAdjustmentIn):
-    return SA.update_stock_adjustment(id, data).json()
+@op_router.put("/stock-adjustment/{id}", response_model=StockAdjustmentOut)
+async def edit_stock_adjustment(
+    id: int, data: UpdateStockAdjustmentIn, access_token: str = Depends(bearer_schema)
+):
+    staff_id = Auth.verify_token(token=access_token.credentials, for_="login")
+    if not StaffOperator.has_stock_controller_permission(staff_id=staff_id):
+        raise AppError(message=PERMISSION_ERROR, status_code=401)
+    return SA.update_stock_adjustment(id, data, staff_id).json()
 
 
-@op_router.get("/stock-running")
-def get_running_stocks():
-    return SR.get_all_running_stocks()
+@op_router.get("/stock-running", response_model=list[RunningStockOut])
+async def get_running_stocks(access_token: str = Depends(bearer_schema)):
+    staff_id = Auth.verify_token(token=access_token.credentials, for_="login")
+    if StaffOperator.has_stock_controller_permission(
+        staff_id=staff_id
+    ) or StaffOperator.has_engineer_permission(staff_id):
+        return SR.get_all_running_stocks()
+    raise AppError(message=PERMISSION_ERROR, status_code=401)
 
 
-@op_router.get("/orders")
-def get_all_orders():
+@op_router.get("/orders", response_model=list[OrderOut])
+async def get_all_orders(access_token: str = Depends(bearer_schema)):
+    staff_id = Auth.verify_token(token=access_token.credentials, for_="login")
+    if not StaffOperator.has_stock_controller_permission(staff_id=staff_id):
+        raise AppError(message=PERMISSION_ERROR, status_code=401)
     return OrderOperator.get_all_orders()

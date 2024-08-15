@@ -8,18 +8,17 @@ from core.setup import Base
 from utils.session import DBSession
 
 
-class StockOut(Base):
-    __tablename__ = "stock_out"
+class Costs(Base):
+    __tablename__ = "costs"
     id = Column(sq.Integer, primary_key=True, unique=True, index=True)
-    barcode_id = Column(sq.Integer, ForeignKey("barcode.id"), nullable=False)
-    order_id = Column(sq.Integer, ForeignKey("orders.id"))
-    quantity = Column(sq.Integer, nullable=False)
-    barcode = relationship("Barcode", back_populates="stock_out")
-    orders = relationship("Orders", back_populates="stock_out")
+    cost = Column(sq.Float, unique=True, nullable=False, default=0.0)
     created_at = Column(sq.DateTime, default=datetime.datetime.now(datetime.UTC))
+    stock = relationship("Stock", back_populates="costs")
 
-    def save(self) -> "StockOut":
+    def save(self, merge=False):
         with DBSession() as db:
+            if merge:
+                self = db.merge(self)
             db.add(self)
             db.commit()
             db.refresh(self)
@@ -28,7 +27,6 @@ class StockOut(Base):
     def json(self):
         return {
             "id": self.id,
-            "quantity": self.quantity,
-            "barcode": self.barcode.json(),
-            "created_at": self.created_at.isoformat(),
+            "cost": self.cost,
+            "sold": self.sold,
         }

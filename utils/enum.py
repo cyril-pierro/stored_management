@@ -9,3 +9,8 @@ class RunningStockStatus(Enum):
 class OrderStatus(Enum):
     part_not_available = "part_not_available"
     part_available = "part_available"
+
+
+class RolesStatus(Enum):
+    engineer = "engineer"
+    stock_controller = "stock_controller"

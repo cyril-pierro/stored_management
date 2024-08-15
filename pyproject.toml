@@ -11,6 +11,10 @@ sqlalchemy = "^2.0.32"
 pydantic-settings = "^2.4.0"
 fastapi = "^0.112.0"
 fastapi-pagination = "^0.12.26"
+passlib = "^1.7.4"
+jose = "^1.0.0"
+redis = "^5.0.8"
+fastapi-mail = "^1.4.1"
 
 
 [build-system]

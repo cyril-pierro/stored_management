@@ -1,7 +1,8 @@
 import datetime
 
 import sqlalchemy as sq
-from sqlalchemy import Column
+from sqlalchemy import Column, ForeignKey
+from sqlalchemy.orm import relationship
 
 from core.setup import Base
 from utils.enum import RunningStockStatus
@@ -11,6 +12,7 @@ from utils.session import DBSession
 class StockRunning(Base):
     __tablename__ = "stock_running"
     id = Column(sq.Integer, primary_key=True, unique=True, index=True)
+    barcode_id = Column(sq.Integer, ForeignKey("barcode.id"), nullable=False)
     stock_quantity = Column(sq.Integer, nullable=False)
     out_quantity = Column(sq.Integer, nullable=False, default=0)
     adjustment_quantity = Column(sq.Integer, nullable=False, default=0)
@@ -18,7 +20,7 @@ class StockRunning(Base):
     status = Column(
         sq.Enum(RunningStockStatus), default=RunningStockStatus.available.name
     )
-    barcode = Column(sq.String, unique=True)
+    barcode = relationship("Barcode", back_populates="stock_running")
     created_at = Column(sq.DateTime, default=datetime.datetime.now(datetime.UTC))
 
     def save(self, merge=False) -> "StockRunning":
@@ -38,6 +40,6 @@ class StockRunning(Base):
             "adjustment_quantity": self.adjustment_quantity,
             "remaining_quantity": self.remaining_quantity,
             "status": self.status.value,
-            "barcode": self.barcode,
+            "barcode": self.barcode.json(),
             "created_at": self.created_at.isoformat(),
         }

@@ -1,11 +1,18 @@
+from datetime import timedelta
 from typing import Union
 
+import error as err
 from models.department import Department
 from models.job import Job
+from models.roles import Roles
 from models.staff import Staff
 from schemas.operations import JobIn
-from schemas.staff import StaffIn, UpdateStaffIn
+from schemas.staff import ChangePasswordIn, LoginIn, StaffIn, UpdateStaffIn
+from utils.enum import RolesStatus
+from utils.redis import Cache
 from utils.session import DBSession
+
+INVALID_CRED = "Invalid Credentials"
 
 
 class JobOperator:
@@ -41,7 +48,7 @@ class JobOperator:
         return True
 
     @staticmethod
-    def edit_job_title(name: str):
+    def edit_job_title(id: int, name: str):
         job_found = JobOperator.get_job_title(id)
         if not job_found:
             raise ValueError("Job not found")
@@ -112,11 +119,14 @@ class StaffOperator:
         if not DepartmentOperator.get_department(data.department_id):
             raise ValueError("Department not Found")
 
+        hash_password = Staff.generate_hash_password(data.password)
         new_staff = Staff(
-            id=data.id,
+            staff_id_number=data.staff_id_number,
             name=data.name,
             job_id=data.job_id,
             department_id=data.department_id,
+            hash_password=hash_password,
+            role_id=data.role_id,
         )
         return new_staff.save()
 
@@ -139,7 +149,8 @@ class StaffOperator:
         if not staff:
             raise ValueError("Staff not found")
         staff.name = data.name
-        return staff.save()
+        staff.role_id = data.role_id
+        return staff.save(merge=True)
 
     @staticmethod
     def delete_staff_by_id(staff_id: int) -> bool:
@@ -155,3 +166,67 @@ class StaffOperator:
     def get_all_staff_members() -> list[Staff]:
         with DBSession() as db:
             return db.query(Staff).all()
+
+    @staticmethod
+    def get_all_staff_roles() -> list[Roles]:
+        with DBSession() as db:
+            return db.query(Roles).all()
+
+    @staticmethod
+    def validate_staff_credentials(data: LoginIn) -> Staff:
+        staff = StaffOperator.get_staff(data.staff_id_number)
+        if not staff:
+            raise err.AppError(message=INVALID_CRED, status_code=400)
+        if not Staff.verify_hash_password(staff.hash_password, data.password):
+            set_handler = Cache.get(
+                f"handle_number_of_retries_for_{data.staff_id_number}"
+            )
+            if not set_handler:
+                Cache.set(
+                    key=f"handle_number_of_retries_for_{data.staff_id_number}",
+                    value=1,
+                    ex=timedelta(minutes=5),
+                )
+            else:
+                Cache.incr(f"handle_number_of_retries_for_{data.staff_id_number}")
+            if (
+                int(Cache.get(f"handle_number_of_retries_for_{data.staff_id_number}"))
+                > 5
+            ):
+                raise err.AppError(
+                    message="Too many attempts to login, Please try again in 5 minutes",
+                    status_code=400,
+                )
+            raise err.AppError(message=INVALID_CRED, status_code=400)
+        return staff
+
+    @staticmethod
+    def change_staff_password(staff_id: int, data: ChangePasswordIn) -> bool:
+        staff = StaffOperator.get_staff(staff_id)
+        if not staff:
+            raise err.AppError(message=INVALID_CRED, status_code=400)
+        if not Staff.verify_hash_password(staff.hash_password, data.old_password):
+            raise err.AppError(message=INVALID_CRED, status_code=400)
+        staff.hash_password = Staff.generate_hash_password(data.new_password)
+        staff.save(merge=True)
+        return True
+
+    @staticmethod
+    def has_stock_controller_permission(staff_id: int) -> bool:
+        staff_found = StaffOperator.get_staff(staff_id)
+        if not staff_found:
+            raise err.AppError(
+                message="You do not have permission to perform this operation",
+                status_code=401,
+            )
+        return staff_found.roles.name.name == RolesStatus.stock_controller.name
+
+    @staticmethod
+    def has_engineer_permission(staff_id: int) -> bool:
+        staff_found = StaffOperator.get_staff(staff_id)
+        if not staff_found:
+            raise err.AppError(
+                message="You do not have permission to perform this operation",
+                status_code=401,
+            )
+        return staff_found.roles.name.name == RolesStatus.engineer.name

@@ -5,7 +5,10 @@ from sqlalchemy import engine_from_config, pool
 from alembic import context
 from config.setting import settings
 from core.setup import Base
+from models.barcode import Barcode
+from models.cost import Costs
 from models.department import Department
+from models.email import Recipients
 from models.job import Job
 from models.order import Orders
 from models.staff import Staff

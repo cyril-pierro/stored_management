@@ -5,6 +5,9 @@ from fastapi.exceptions import HTTPException, RequestValidationError
 from pydantic import ValidationError
 from sqlalchemy.exc import DBAPIError, IntegrityError
 
+from error import AppError
+from jose.exceptions import JWTError
+
 
 def validation_error(
     request: Request, exec: Union[RequestValidationError, ValidationError]
@@ -40,3 +43,21 @@ def validation_for_db_errors(
             f"{error_msg.split(':')[1].split('.')[1].capitalize()} already exists"
         )
     return responses.JSONResponse(status_code=422, content={"message": error_msg})
+
+
+def validation_app_error(request: Request, exec: AppError):
+    return responses.JSONResponse(
+        status_code=exec.status_code, content={"message": exec.message}
+    )
+
+
+def validation_jwt_error(request: Request, exc: JWTError):
+    """
+    Handle JWT Exceptions.
+    """
+    return responses.JSONResponse(
+        status_code=401,
+        content={
+            "message": f"Invalid Token {exc}",
+        },
+    )

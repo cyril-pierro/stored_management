@@ -4,7 +4,7 @@ def generate_codes(previous_code: str = None):
     prefix, num = previous_code.split("-")
     num = int(num)
     num += 1
-    if num > 9999:
+    if num > 999999:
         prefix = "".join(
             [chr(ord(char) + 1) if char != "Z" else "A" for char in reversed(prefix)]
         )[::-1]
