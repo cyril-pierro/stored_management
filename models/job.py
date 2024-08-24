@@ -15,8 +15,10 @@ class Job(Base):
     staff = relationship("Staff", back_populates="job")
     created_at = Column(sq.DateTime, default=datetime.datetime.now(datetime.UTC))
 
-    def save(self) -> "Job":
+    def save(self, merge=False) -> "Job":
         with DBSession() as db:
+            if merge:
+                self = db.merge(self)
             db.add(self)
             db.commit()
             db.refresh(self)

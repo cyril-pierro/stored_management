@@ -4,15 +4,16 @@ from fastapi.exceptions import HTTPException, RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi_pagination import add_pagination
 from fastapi_pagination.utils import disable_installed_extensions_check
+from jose.exceptions import JWTError
 from pydantic import ValidationError
 from sqlalchemy.exc import DBAPIError, IntegrityError
-from jose.exceptions import JWTError
 
 import handlers as hlp
 from api.v1.routers import auth
 from api.v1.routers import engineer as cu
 from api.v1.routers import operations as op
 from api.v1.routers import stock_control as scp
+from api.v1.routers import report
 from core.setup import Base, engine
 from error import AppError
 from utils.common import responses
@@ -30,6 +31,7 @@ app.include_router(op.op_router, tags=["Management Operations"])
 app.include_router(scp.op_router, tags=["Stock Control Operations"])
 app.include_router(cu.op_router, tags=["Engineer Operations"])
 app.include_router(auth.op_router, tags=["Authentication Operations"])
+app.include_router(report.op_router, tags=["Stock Reports"])
 
 add_pagination(app)
 app.add_middleware(
@@ -46,7 +48,7 @@ app.add_exception_handler(ValidationError, hlp.validation_error)
 app.add_exception_handler(DBAPIError, hlp.validation_for_db_errors)
 app.add_exception_handler(IntegrityError, hlp.validation_for_db_errors)
 app.add_exception_handler(AppError, hlp.validation_app_error)
-app.add_exception_handler(JWTError, hlp.validation_jwt_error)   
+app.add_exception_handler(JWTError, hlp.validation_jwt_error)
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0")

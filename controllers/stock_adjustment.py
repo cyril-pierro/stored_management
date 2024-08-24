@@ -7,8 +7,9 @@ from controllers.stock import StockOperator as SO
 from controllers.stock_running import StockRunningOperator as SR
 from models.barcode import Barcode
 from models.stock_adjustment import StockAdjustment
-from schemas.stock import StockAdjustmentIn, UpdateStockAdjustmentIn
+from schemas.stock import StockAdjustmentIn, UpdateStockAdjustmentIn, StockQuery
 from utils.session import DBSession
+from utils.countFilter import StockFilter
 
 
 def parse_stock_adjustment_data(data: Union[Any, list, None]):
@@ -44,7 +45,7 @@ class StockAdjustmentOperator:
     @staticmethod
     def get_all_stock_adjustments():
         with DBSession() as db:
-            return db.query(StockAdjustment).all()
+            return db.query(StockAdjustment).order_by(StockAdjustment.id.desc()).all()
 
     @staticmethod
     def create_stock_adjustment(barcode: str, data: StockAdjustmentIn, staff_id: int):
@@ -65,21 +66,19 @@ class StockAdjustmentOperator:
         values["barcode_id"] = barcode_found.id
         stock_adj = StockAdjustment(**values)
         value = stock_adj.save()
-        grouped_data: dict[
-            str, Any
-        ] = StockAdjustmentOperator.get_grouped_stock_adjustments_by_barcode(barcode)
+        grouped_data: dict[str, Any] = (
+            StockAdjustmentOperator.get_grouped_stock_adjustments_by_barcode(barcode)
+        )
         SR.create_running_stock(
             barcode,
             stock_operator=SO,
             adjustment_quantity=grouped_data.get("quantity"),
+            order_quantity=data.quantity,
         )
         return value
 
     @staticmethod
     def update_stock_adjustment(id: int, data: UpdateStockAdjustmentIn, staff_id: int):
-        values = data.__dict__
-        values["updated_at"] = datetime.datetime.now(datetime.UTC)
-        values["updated_by"] = staff_id
         with DBSession() as db:
             stock_adj_found = (
                 db.query(StockAdjustment).filter(StockAdjustment.id == id).first()
@@ -87,26 +86,52 @@ class StockAdjustmentOperator:
             if not stock_adj_found:
                 raise ValueError("Stock Adjustment record not found")
             stock_adj_found.department_id = data.department_id
-            stock_adj_found.barcode_id = SO.get_barcode(data.barcode).id
             stock_adj_found.quantity = data.quantity
+            stock_adj_found.updated_at = datetime.datetime.now(datetime.UTC)
+            stock_adj_found.updated_by = staff_id
             stock_adj_found.updated_at = datetime.datetime.now(datetime.UTC)
             db.add(stock_adj_found)
             db.commit()
             db.refresh(stock_adj_found)
-            grouped_data: dict[
-                str, Any
-            ] = StockAdjustmentOperator.get_grouped_stock_adjustments_by_barcode(
-                data.barcode
+            grouped_data: dict[str, Any] = (
+                StockAdjustmentOperator.get_grouped_stock_adjustments_by_barcode(
+                    stock_adj_found.barcode.barcode
+                )
             )
             SR.create_running_stock(
-                data.barcode,
+                stock_adj_found.barcode.barcode,
                 stock_operator=SO,
                 adjustment_quantity=grouped_data.get("quantity"),
             )
             return stock_adj_found
 
     @staticmethod
-    def group_all_stock_adjustments_for_stocks():
+    def delete_stock_adjustment(id: int):
+        with DBSession() as db:
+            stock_adj_found = (
+                db.query(StockAdjustment).filter(StockAdjustment.id == id).first()
+            )
+            if not stock_adj_found:
+                raise ValueError("Stock Adjustment record not found")
+            barcode = stock_adj_found.barcode.barcode
+            db.delete(stock_adj_found)
+            db.commit()
+            grouped_data: dict[str, Any] = (
+                StockAdjustmentOperator.get_grouped_stock_adjustments_by_barcode(
+                    barcode
+                )
+            )
+            SR.create_running_stock(
+                stock_adj_found.barcode.barcode,
+                stock_operator=SO,
+                adjustment_quantity=(
+                    -1 if not grouped_data else grouped_data.get("quantity", 0)
+                ),
+            )
+            return True
+
+    @staticmethod
+    def group_all_stock_adjustments_for_stocks(query_params: StockQuery):
         with DBSession() as db:
             query = (
                 db.query(
@@ -114,10 +139,15 @@ class StockAdjustmentOperator:
                     func.sum(StockAdjustment.quantity).label("total_quantity"),
                     StockAdjustment.department_id,
                 )
-                .join(StockAdjustment, Barcode.id == StockAdjustment.barcode_id)
+                .join(
+                    StockAdjustment, Barcode.id == StockAdjustment.barcode_id
+                )
                 .group_by(StockAdjustment.barcode_id)
             )
-            return parse_stock_adjustment_data(query.all())
+            filter_instance = StockFilter(query_params, query_to_use=query)
+            # return parse_stock_adjustment_data(query.all())
+            return parse_stock_adjustment_data(filter_instance.apply())
+
 
     @staticmethod
     def get_grouped_stock_adjustments_by_barcode(barcode: str):

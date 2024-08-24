@@ -20,13 +20,15 @@ class StockRunning(Base):
     status = Column(
         sq.Enum(RunningStockStatus), default=RunningStockStatus.available.name
     )
-    barcode = relationship("Barcode", back_populates="stock_running")
-    created_at = Column(sq.DateTime, default=datetime.datetime.now(datetime.UTC))
+    barcode = relationship("Barcode", back_populates="stock_running", lazy="selectin")
+    created_at = Column(sq.DateTime, default=datetime.datetime.now())
+    updated_at = Column(sq.DateTime)
 
     def save(self, merge=False) -> "StockRunning":
         with DBSession() as db:
             if merge:
                 self = db.merge(self)
+            self.updated_at = datetime.datetime.now()
             db.add(self)
             db.commit()
             db.refresh(self)
@@ -42,4 +44,5 @@ class StockRunning(Base):
             "status": self.status.value,
             "barcode": self.barcode.json(),
             "created_at": self.created_at.isoformat(),
+            "updated_at": self.updated_at.isoformat(),
         }

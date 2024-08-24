@@ -37,7 +37,9 @@ class EmailService:
     ):
         template = env.get_template(email_template)
         html = template.render(
-            content=content.get("barcode"),
+            barcode=content.get("barcode"),
+            location=content.get("location"),
+            specification=content.get("specification"),
         )
         try:
             message = MessageSchema(

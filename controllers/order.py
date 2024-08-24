@@ -5,6 +5,7 @@ from controllers.stock_out import StockOutOperator as SO
 from controllers.stock_running import StockRunningOperator as SR
 from models.email import Recipients
 from models.order import Orders
+from models.barcode import Barcode
 from schemas.order import OrderIn
 from utils.email import EmailService
 from utils.enum import OrderStatus
@@ -21,7 +22,6 @@ class OrderOperator:
         running_stock = SR.get_stock_in_inventory(barcode)
         if not running_stock:
             raise ValueError("No stock available with barcode specified")
-        # running_stock_value = running_stock.stock_quantity - (running_stock.out_quantity + running_stock.adjustment_quantity)
         return {
             "barcode": barcode,
             "specification": stock.specification,
@@ -33,7 +33,7 @@ class OrderOperator:
     @staticmethod
     def get_all_orders():
         with DBSession() as db:
-            return db.query(Orders).all()
+            return db.query(Orders).order_by(Orders.id.desc()).all()
 
     @staticmethod
     def get_number_of_orders():
@@ -55,6 +55,7 @@ class OrderOperator:
             barcode_id=running_stock.barcode_id,
             staff_id=user_id,
             job_number=data.job_number,
+            part_name=data.part_name,
             quantity=data.quantity,
             available_quantity=running_stock.remaining_quantity,
             restrictions=OrderStatus.part_available.name,
@@ -74,14 +75,14 @@ class OrderOperator:
             barcode,
             stock_operator=StockOperator,
             out_quantity=value.get("quantity", 0),
-            order_quantity=data.quantity
+            order_quantity=data.quantity,
         )
         if stock_runner.status.value == RS.re_order.value:
             # send email to recipients
             background_task.add_task(
                 OrderOperator.notify_stock_controllers,
                 recipients=Recipients.get_all_recipients(),
-                barcode=stock_runner.barcode.barcode,
+                barcode=stock_runner.barcode,
             )
         StockOperator.update_stock_and_cost(
             quantity=data.quantity, barcode_id=running_stock.barcode_id
@@ -89,10 +90,14 @@ class OrderOperator:
         return created_order
 
     @staticmethod
-    async def notify_stock_controllers(recipients: list[Recipients], barcode: str):
+    async def notify_stock_controllers(recipients: list[Recipients], barcode: Barcode):
         emails = [recipient.email for recipient in recipients]
         await EmailService.send(
             email=emails,
             subject="Stock Re-Order Notification Alert",
-            content={"barcode": barcode},
+            content={
+                "barcode": barcode.barcode,
+                "location": barcode.location,
+                "specification": barcode.specification,
+            },
         )

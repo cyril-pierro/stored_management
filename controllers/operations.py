@@ -43,6 +43,7 @@ class JobOperator:
         if not job_found:
             raise ValueError("Job not found")
         with DBSession() as db:
+            job_found = db.merge(job_found)
             db.delete(job_found)
             db.commit()
         return True
@@ -52,12 +53,8 @@ class JobOperator:
         job_found = JobOperator.get_job_title(id)
         if not job_found:
             raise ValueError("Job not found")
-        with DBSession() as db:
-            job_found.name = name
-            db.add(job_found)
-            db.commit()
-            db.refresh(job_found)
-            return job_found
+        job_found.name = name
+        return job_found.save(merge=True)
 
 
 class DepartmentOperator:
@@ -92,6 +89,7 @@ class DepartmentOperator:
         if not dep_found:
             raise ValueError("Department not found")
         with DBSession() as db:
+            dep_found = db.merge(dep_found)
             db.delete(dep_found)
             db.commit()
         return True
@@ -101,11 +99,8 @@ class DepartmentOperator:
         dep_found = DepartmentOperator.get_department(id)
         if not dep_found:
             raise ValueError("Department not found")
-        with DBSession() as db:
-            dep_found.name = name
-            db.add(dep_found)
-            db.commit()
-            return db.refresh(dep_found)
+        dep_found.name = name
+        return dep_found.save(merge=True)
 
 
 class StaffOperator:
@@ -158,6 +153,7 @@ class StaffOperator:
         if not staff:
             raise ValueError("Staff not found")
         with DBSession() as db:
+            staff = db.merge(staff)
             db.delete(staff)
             db.commit()
         return True

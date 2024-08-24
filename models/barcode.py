@@ -10,11 +10,12 @@ from utils.session import DBSession
 
 class Barcode(Base):
     __tablename__ = "barcode"
-    id = Column(sq.Integer, primary_key=True, unique=True, index=True)
-    barcode = Column(sq.String, unique=True, index=True)
-    code = Column(sq.String, index=True)
-    specification = Column(sq.String)
-    location = Column(sq.String)
+    id = Column(sq.Integer, primary_key=True, unique=True, index=True, nullable=False)
+    barcode = Column(sq.String, unique=True, index=True, nullable=False)
+    code = Column(sq.String, index=True, nullable=False)
+    specification = Column(sq.String, nullable=False)
+    location = Column(sq.String, nullable=False)
+    erm_code = Column(sq.String, nullable=True)
     stock = relationship(
         "Stock",
         back_populates="barcode",
@@ -45,6 +46,13 @@ class Barcode(Base):
     )
     orders = relationship(
         "Orders",
+        back_populates="barcode",
+        passive_deletes="all",
+        passive_updates=True,
+        lazy="subquery",
+    )
+    cost_evaluation = relationship(
+        "CostEvaluation",
         back_populates="barcode",
         passive_deletes="all",
         passive_updates=True,

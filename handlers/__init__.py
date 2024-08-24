@@ -2,11 +2,11 @@ from typing import Union
 
 from fastapi import Request, responses
 from fastapi.exceptions import HTTPException, RequestValidationError
+from jose.exceptions import JWTError
 from pydantic import ValidationError
 from sqlalchemy.exc import DBAPIError, IntegrityError
 
 from error import AppError
-from jose.exceptions import JWTError
 
 
 def validation_error(

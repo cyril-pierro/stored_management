@@ -5,6 +5,8 @@ from sqlalchemy import func
 from models.barcode import Barcode
 from models.stock_out import StockOut
 from utils.session import DBSession
+from schemas.stock import StockQuery
+from utils.countFilter import StockFilter
 
 
 def parse_stock_out_data(data: Union[Any, list, None]):
@@ -29,7 +31,6 @@ def parse_stock_out_data(data: Union[Any, list, None]):
         "location": data[0].location,
         "specification": data[0].specification,
         "code": data[0].code,
-        # "cost": data[0].cost,
         "quantity": data[1],
     }
 
@@ -38,7 +39,7 @@ class StockOutOperator:
     @staticmethod
     def get_all_stocks():
         with DBSession() as db:
-            return db.query(StockOut).all()
+            return db.query(StockOut).order_by(StockOut.id.desc()).all()
 
     @staticmethod
     def create_stock_out(barcode_id: int, quantity: int, order_id: int = None):
@@ -50,14 +51,15 @@ class StockOutOperator:
         return new_stock_out.save()
 
     @staticmethod
-    def group_all_stock_ids_data():
+    def group_all_stock_ids_data(query_params: StockQuery):
         with DBSession() as db:
             query = (
                 db.query(Barcode, func.sum(StockOut.quantity).label("total_quantity"))
                 .join(StockOut, Barcode.id == StockOut.barcode_id)
                 .group_by(StockOut.barcode_id)
             )
-            return parse_stock_out_data(query.all())
+            filter_instance = StockFilter(query_params, query_to_use=query)
+            return parse_stock_out_data(filter_instance.apply())
 
     @staticmethod
     def get_group_all_stock_ids_data_by_stock_id(barcode: str):

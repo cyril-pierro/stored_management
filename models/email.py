@@ -55,6 +55,7 @@ class Recipients(Base):
         if not value:
             raise ValueError("Recipient does not exist")
         with DBSession() as db:
+            value = db.merge(value)
             db.delete(value)
             db.commit()
             return True

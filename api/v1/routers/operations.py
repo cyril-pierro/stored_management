@@ -1,13 +1,19 @@
 from fastapi import APIRouter, Depends
 
 from controllers.auth import Auth
-from controllers.operations import (DepartmentOperator, JobOperator,
-                                    StaffOperator)
+from controllers.operations import DepartmentOperator, JobOperator, StaffOperator
 from error import AppError
 from models.email import Recipients
-from schemas.operations import (DepartmentIn, DepartmentOut, EmailConfigureIn,
-                                EmailConfigureOut, JobIn, JobOut, RolesOut,
-                                SuccessOut)
+from schemas.operations import (
+    DepartmentIn,
+    DepartmentOut,
+    EmailConfigureIn,
+    EmailConfigureOut,
+    JobIn,
+    JobOut,
+    RolesOut,
+    SuccessOut,
+)
 from schemas.staff import StaffIn, StaffOut, UpdateStaffIn
 from utils.common import bearer_schema
 
@@ -92,7 +98,7 @@ async def update_staff_member(
     return StaffOperator.update_staff_by_id(id, data)
 
 
-@op_router.get("/job-titles", response_model=list[JobOut])
+@op_router.get("/job-title", response_model=list[JobOut])
 async def get_all_job_titles(access_token: str = Depends(bearer_schema)):
     staff_id = Auth.verify_token(token=access_token.credentials, for_="login")
     if not StaffOperator.has_stock_controller_permission(staff_id=staff_id):

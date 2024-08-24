@@ -4,13 +4,14 @@ from typing import Any, Union
 from sqlalchemy import and_, func
 
 from controllers.stock_running import StockRunningOperator as SR
+from error import AppError
 from models.barcode import Barcode
 from models.cost import Costs
 from models.stock import Stock
+from models.evaluation import CostEvaluation
 from schemas.stock import StockIn
 from utils.generate import generate_codes
 from utils.session import DBSession
-from error import AppError
 
 
 def parse_stock_data(stock_data: Union[Any, list, None]):
@@ -45,7 +46,7 @@ class StockOperator:
     @staticmethod
     def get_all_stocks():
         with DBSession() as db:
-            return db.query(Stock).all()
+            return db.query(Stock).order_by(Stock.id.desc()).all()
 
     @staticmethod
     def get_all_barcodes():
@@ -99,7 +100,7 @@ class StockOperator:
         SR.create_running_stock(
             barcode=data.barcode,
             stock_operator=StockOperator,
-            add_stock_quantity=quantity_allocated
+            add_stock_quantity=quantity_allocated,
         )
         return value
 
@@ -108,7 +109,7 @@ class StockOperator:
         with DBSession() as db:
             stocks = (
                 db.query(Stock)
-                .filter(and_(Stock.barcode_id == barcode_id, Stock.sold == False))
+                .filter(and_(Stock.barcode_id == barcode_id, Stock.sold.is_(False)))
                 .all()
             )
             if len(stocks) == 0:
@@ -116,19 +117,42 @@ class StockOperator:
             for stock in stocks:
                 if stock.quantity >= quantity:
                     stock.quantity -= quantity
+                    StockOperator.add_cost_evaluation_data(
+                        stock_obj=stock, quantity=quantity
+                    )
                     if stock.quantity == 0:
                         stock.sold = True
                     stock.updated_at = datetime.datetime.now(datetime.UTC)
                     db.commit()
                     db.refresh(stock)
                 else:
+                    old_quantity = stock.quantity
                     quantity = quantity - stock.quantity
                     stock.quantity = 0
                     stock.sold = True
                     stock.updated_at = datetime.datetime.now(datetime.UTC)
                     db.commit()
                     db.refresh(stock)
+                    StockOperator.add_cost_evaluation_data(
+                        stock_obj=stock,
+                        quantity=old_quantity,
+                    )
             return True
+
+    @staticmethod
+    def add_cost_evaluation_data(stock_obj: Stock, quantity: int):
+        new_cost_data = CostEvaluation(
+            barcode_id=stock_obj.barcode_id,
+            cost=stock_obj.costs.cost,
+            quantity=quantity,
+            total=round(float(quantity * stock_obj.costs.cost), 2),
+        )
+        new_cost_data.save()
+
+    @staticmethod
+    def get_all_cost_evaluation_data():
+        with DBSession() as db:
+            return db.query(CostEvaluation).all()
 
     @staticmethod
     def group_all_stock_barcode():
@@ -176,28 +200,32 @@ class StockOperator:
     @staticmethod
     def update_stock(stock_id: int, data: StockIn, staff_id: int):
         values = data.__dict__
-        values["updated_by"] = staff_id
-        values["updated_at"] = datetime.datetime.now(datetime.UTC)
+        quantity = values.pop("quantity")
+        cost = values.pop("cost")
         stock_found = StockOperator.get_stock_by(stock_id)
         if not stock_found:
             raise ValueError("Stock not found")
         if stock_found.updated_at or stock_found.sold:
             raise AppError(
                 message="Sorry, can't update this stock info, it is in use",
-                status_code=400
+                status_code=400,
             )
         # update stock details
         with DBSession() as db:
             query = db.query(Barcode).filter(Barcode.id == stock_found.barcode_id)
             query.update(values, synchronize_session=False)
             db.commit()
-            updated_instance = query.one_or_none()
+            stock_found.updated_at = datetime.datetime.now(datetime.UTC)
+            stock_found.updated_by = staff_id
+            stock_found.quantity = quantity
+            cost_id = StockOperator.get_or_generate_cost(cost).id
+            stock_found.cost_id = cost_id
             SR.create_running_stock(
                 barcode=data.barcode,
                 stock_operator=StockOperator,
             )
-            stock_found.save()
-            return updated_instance
+            stock_found.save(merge=True)
+            return stock_found
 
     @staticmethod
     def remove_stock(stock_id: int):
@@ -208,15 +236,16 @@ class StockOperator:
             if stock_found.updated_at or stock_found.sold:
                 raise AppError(
                     message="Sorry, can't delete this stock, it is in use",
-                    status_code=400
+                    status_code=400,
                 )
             quantity = stock_found.quantity
+            barcode_value = stock_found.barcode.barcode
             db.delete(stock_found)
             db.commit()
             SR.create_running_stock(
-                barcode=stock_found.barcode,
+                barcode=barcode_value,
                 stock_operator=StockOperator,
                 should_delete_quantity=True,
-                order_quantity=quantity
+                order_quantity=quantity,
             )
             return True

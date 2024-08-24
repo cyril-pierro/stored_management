@@ -2,7 +2,9 @@ from datetime import datetime
 from typing import Optional
 
 from pydantic import BaseModel
+from fastapi import Query
 
+from schemas.staff import StaffOut
 from utils.enum import OrderStatus, RunningStockStatus
 
 
@@ -44,6 +46,7 @@ class StockIn(BaseModel):
     location: str
     quantity: int
     cost: float
+    erm_code: Optional[str] = None
 
 
 class StockOut(BaseModel):
@@ -52,8 +55,8 @@ class StockOut(BaseModel):
     sold: bool
     barcode: Barcode
     costs: CostOut
-    created_by: Optional[int] = None
-    updated_by: Optional[int] = None
+    creator: Optional[StaffOut] = None
+    modifier: Optional[StaffOut] = None
     created_at: datetime
     updated_at: Optional[datetime] = None
 
@@ -67,7 +70,7 @@ class StockAdjustmentIn(BaseModel):
 
 
 class UpdateStockAdjustmentIn(StockAdjustmentIn):
-    barcode: str
+    pass
 
 
 class StockAdjustmentOut(StockAdjustmentIn):
@@ -116,3 +119,19 @@ class RunningStockAvailabilityOut(BaseModel):
     location: str
     available: RunningStockStatus
     running_stock: int
+
+
+class CostEvaluationOut(BaseModel):
+    barcode: Barcode
+    quantity: int
+    cost: float
+    total: float
+    created_at: datetime
+
+
+class StockQuery(BaseModel):
+    from_value: Optional[int] | None = Query(None)
+    to_value: Optional[int] | None = Query(None)
+    sorted: Optional[bool] | None = Query(None)
+    # created_at_min: str | None = Query(None, max_length=255)
+    # created_at_max: str | None = Query(None, max_length=255)

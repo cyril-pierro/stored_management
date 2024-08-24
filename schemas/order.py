@@ -10,7 +10,7 @@ from utils.enum import OrderStatus
 
 class OrderIn(BaseModel):
     job_number: str
-    part_name: Optional[str]
+    part_name: str
     quantity: int
 
 
@@ -19,6 +19,7 @@ class OrderOut(BaseModel):
     job_number: str
     staff: StaffOut
     quantity: int
+    part_name: Optional[str]
     restrictions: OrderStatus
     barcode: Barcode
     available_quantity: int

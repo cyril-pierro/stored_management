@@ -16,8 +16,10 @@ class Department(Base):
     stock_adjustments = relationship("StockAdjustment", back_populates="department")
     created_at = Column(sq.DateTime, default=datetime.datetime.now(datetime.UTC))
 
-    def save(self) -> "Department":
+    def save(self, merge=True) -> "Department":
         with DBSession() as db:
+            if merge:
+                self = db.merge(self)
             db.add(self)
             db.commit()
             db.refresh(self)
