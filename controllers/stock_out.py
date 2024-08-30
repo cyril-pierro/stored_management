@@ -56,7 +56,7 @@ class StockOutOperator:
             query = (
                 db.query(Barcode, func.sum(StockOut.quantity).label("total_quantity"))
                 .join(StockOut, Barcode.id == StockOut.barcode_id)
-                .group_by(StockOut.barcode_id)
+                .group_by(StockOut.barcode_id, Barcode.id)
             )
             filter_instance = StockFilter(query_params, query_to_use=query)
             return parse_stock_out_data(filter_instance.apply())
@@ -71,6 +71,6 @@ class StockOutOperator:
                 )
                 .join(StockOut, Barcode.id == StockOut.barcode_id)
                 .filter(Barcode.barcode == barcode)
-                .group_by(StockOut.barcode_id)
+                .group_by(StockOut.barcode_id, Barcode.id)
             )
             return parse_stock_out_data(query.one_or_none())

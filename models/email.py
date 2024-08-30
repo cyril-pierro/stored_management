@@ -13,7 +13,7 @@ class Recipients(Base):
     __tablename__ = "emails"
     id = Column(sq.Integer, primary_key=True, unique=True, index=True)
     email = Column(sq.String, unique=True, index=True)
-    created_at = Column(sq.DateTime, default=datetime.datetime.now(datetime.UTC))
+    created_at = Column(sq.DateTime, default=datetime.datetime.now())
 
     def save(self, merge=False) -> "Recipients":
         with DBSession() as db:
@@ -37,7 +37,7 @@ class Recipients(Base):
     @staticmethod
     def find_recipient(email: Union[EmailStr, int]) -> "Recipients":
         with DBSession() as db:
-            if isinstance(email, EmailStr):
+            if isinstance(email, str):
                 return db.query(Recipients).filter(Recipients.email == email).first()
             return db.query(Recipients).filter(Recipients.id == email).first()
 

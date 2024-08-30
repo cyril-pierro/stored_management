@@ -14,7 +14,7 @@ class Department(Base):
     name = Column(sq.String(200), nullable=False, unique=True)
     staff = relationship("Staff", back_populates="department")
     stock_adjustments = relationship("StockAdjustment", back_populates="department")
-    created_at = Column(sq.DateTime, default=datetime.datetime.now(datetime.UTC))
+    created_at = Column(sq.DateTime, default=datetime.datetime.now())
 
     def save(self, merge=True) -> "Department":
         with DBSession() as db:

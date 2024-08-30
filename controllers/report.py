@@ -2,6 +2,7 @@ from models.staff import Staff
 from models.department import Department
 from models.stock_adjustment import StockAdjustment
 from models.order import Orders
+from models.stock import Stock
 from models.barcode import Barcode
 from utils.session import DBSession
 from sqlalchemy import func
@@ -15,7 +16,7 @@ class ReportDashboard:
             return ReportParser.convert_engineers_to_departments_data(
                 db.query(Department, func.count(Staff.id))
                 .join(Staff, Staff.department_id == Department.id)
-                .group_by(Staff.department_id)
+                .group_by(Staff.department_id, Department.id)
                 .all()
             )
 
@@ -25,7 +26,8 @@ class ReportDashboard:
             subq_adjustments = (
                 db.query(
                     StockAdjustment.department_id,
-                    func.sum(StockAdjustment.quantity).label("adjustment_amount"),
+                    func.sum(StockAdjustment.quantity).label(
+                        "adjustment_amount"),
                 )
                 .group_by(StockAdjustment.department_id)
                 .subquery()
@@ -33,7 +35,8 @@ class ReportDashboard:
 
             subq_orders = (
                 db.query(
-                    Staff.department_id, func.sum(Orders.quantity).label("sale_amount")
+                    Staff.department_id, func.sum(
+                        Orders.quantity).label("sale_amount")
                 )
                 .join(Orders, Staff.id == Orders.staff_id)
                 .group_by(Staff.department_id)
@@ -61,10 +64,12 @@ class ReportDashboard:
         with DBSession() as db:
             return ReportParser.convert_number_and_quantity_orders_data(
                 data=db.query(
-                    Department.name, func.count(Orders.id), func.sum(Orders.quantity)
+                    Department.name, func.count(
+                        Orders.id), func.sum(Orders.quantity)
                 )
                 .outerjoin(
-                    Orders, Orders.staff.has(Staff.department_id == Department.id)
+                    Orders, Orders.staff.has(
+                        Staff.department_id == Department.id)
                 )
                 .group_by(Department.name)
                 .all()
@@ -73,9 +78,19 @@ class ReportDashboard:
     @staticmethod
     def get_erm_report_data():
         with DBSession() as db:
-            value = (
-                db.query(Orders)
-                .filter(Orders.barcode.has(Barcode.erm_code.is_not(None)))
-                .all()
-            )
-            return [i.erm_report() for i in value]
+            values = db.query(Orders, Stock).join(Stock, Orders.barcode_id == Stock.barcode_id) \
+                .group_by(Orders.barcode_id, Orders.id, Stock.id)\
+                .filter(Stock.erm_code.is_not(None)).all()
+            return [
+                {
+                    "id": order.id,
+                    "date": order.created_at.isoformat(),
+                    "event_number": order.job_number,
+                    "part_code": order.barcode.barcode,
+                    "part_type": order.part_name,
+                    "part_description": order.barcode.specification,
+                    "quantity": order.quantity,
+                    "erm_code": stock.erm_code,
+                }
+                for order, stock in values
+            ]

@@ -15,7 +15,7 @@ class Barcode(Base):
     code = Column(sq.String, index=True, nullable=False)
     specification = Column(sq.String, nullable=False)
     location = Column(sq.String, nullable=False)
-    erm_code = Column(sq.String, nullable=True)
+    category = Column(sq.String, nullable=False)
     stock = relationship(
         "Stock",
         back_populates="barcode",
@@ -58,10 +58,12 @@ class Barcode(Base):
         passive_updates=True,
         lazy="subquery",
     )
-    created_at = Column(sq.DateTime, default=datetime.datetime.now(datetime.UTC))
+    created_at = Column(sq.DateTime, default=datetime.datetime.now())
 
-    def save(self):
+    def save(self, merge=False):
         with DBSession() as db:
+            if merge:
+                self = db.merge(self)
             db.add(self)
             db.commit()
             db.refresh(self)
@@ -74,7 +76,7 @@ class Barcode(Base):
             "code": self.code,
             "specification": self.specification,
             "location": self.location,
-            "quantity": self.quantity,
+            "category": self.category,
             "created_at": self.created_at.isoformat(),
         }
 

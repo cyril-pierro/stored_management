@@ -12,14 +12,14 @@ PERMISSION_ERROR = "You do not have permission to perform this operation"
 op_router = APIRouter()
 
 
-@op_router.get("/stock/{barcode}/available", response_model=RSO)
+@op_router.get("/stock/{barcode_id}/available", response_model=RSO)
 async def check_if_part_is_available(
-    barcode: str, access_token: str = Depends(bearer_schema)
+    barcode_id: int, access_token: str = Depends(bearer_schema)
 ):
     staff_id = Auth.verify_token(token=access_token.credentials, for_="login")
     if not StaffOperator.has_engineer_permission(staff_id):
         raise AppError(message=PERMISSION_ERROR, status_code=401)
-    return OO.check_if_order_is_available(barcode)
+    return OO.check_if_order_is_available(barcode_id)
 
 
 @op_router.get("/orders/done", response_model=OrdersDoneOut)

@@ -22,8 +22,8 @@ class StockAdjustment(Base):
     department = relationship(
         "Department", lazy="selectin", back_populates="stock_adjustments"
     )
-    created_at = Column(sq.DateTime, default=datetime.datetime.now(datetime.UTC))
-    updated_at = Column(sq.DateTime, default=datetime.datetime.now(datetime.UTC))
+    created_at = Column(sq.DateTime, default=datetime.datetime.now())
+    updated_at = Column(sq.DateTime, default=datetime.datetime.now())
 
     def save(self) -> "StockAdjustment":
         with DBSession() as db:

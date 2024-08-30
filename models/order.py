@@ -28,7 +28,6 @@ class Orders(Base):
         "Staff", foreign_keys=[staff_id], back_populates="orders", lazy="selectin"
     )
     created_at = Column(sq.DateTime, default=datetime.datetime.now())
-    # updated_at = Column(sq.DateTime)
 
     def save(self) -> "Orders":
         with DBSession() as db:
@@ -59,5 +58,6 @@ class Orders(Base):
             "part_type": self.part_name,
             "part_description": self.barcode.specification,
             "quantity": self.quantity,
-            "erm_code": self.barcode.erm_code,
+            "erm_code": self.barcode.stock[0].erm_code,
         }
+# Stock.erm_code.is_not(None)

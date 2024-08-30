@@ -16,7 +16,7 @@ class Roles(Base):
         sq.Enum(RolesStatus), nullable=False, default=RolesStatus.engineer.name
     )
     staff = relationship("Staff", back_populates="roles")
-    created_at = Column(sq.DateTime, default=datetime.datetime.now(datetime.UTC))
+    created_at = Column(sq.DateTime, default=datetime.datetime.now())
 
     def save(self):
         with DBSession() as db:

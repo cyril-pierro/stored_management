@@ -6,6 +6,7 @@ from utils.enum import RunningStockStatus
 from utils.session import DBSession
 from schemas.stock import StockQuery
 from utils.countFilter import StockFilter
+from typing import Union
 
 StockOperator = TypeVar("StockOperator")
 
@@ -58,11 +59,11 @@ class StockRunningOperator:
             running_stock_found.stock_quantity += add_stock_quantity
             running_stock_found.remaining_quantity = quantity
         else:
-            running_stock_found.remaining_quantity = (
-                quantity
-                if not should_delete_quantity
-                else running_stock_found.remaining_quantity - order_quantity
-            )
+            if not should_delete_quantity:
+                running_stock_found.remaining_quantity = quantity
+            else:
+                running_stock_found.remaining_quantity -= order_quantity
+                running_stock_found.stock_quantity -= order_quantity
         if running_stock_found.remaining_quantity < 10:
             running_stock_found.status = RunningStockStatus.re_order.name
         else:
@@ -70,9 +71,12 @@ class StockRunningOperator:
         return running_stock_found.save(merge=True)
 
     @staticmethod
-    def get_stock_in_inventory(barcode: str):
+    def get_stock_in_inventory(barcode_id: Union[int, str]):
         with DBSession() as db:
-            barcode_found = db.query(Barcode).filter(Barcode.barcode == barcode).first()
+            if isinstance(barcode_id, int):
+                barcode_found = db.query(Barcode).filter(Barcode.id == barcode_id).first()
+            else:
+                barcode_found = db.query(Barcode).filter(Barcode.barcode == barcode_id).first()
             if not barcode_found:
                 raise ValueError("Could not find barcode in inventory")
             return (

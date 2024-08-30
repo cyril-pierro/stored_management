@@ -12,6 +12,7 @@ class Stock(Base):
     __tablename__ = "stock"
     id = Column(sq.Integer, primary_key=True, unique=True, index=True)
     barcode_id = Column(sq.Integer, ForeignKey("barcode.id"), nullable=False)
+    erm_code = Column(sq.String, nullable=True)
     quantity = Column(sq.Integer, default=0)
     sold = Column(sq.Boolean, default=False)
     cost_id = Column(sq.Integer, ForeignKey("costs.id"), nullable=False)
@@ -37,7 +38,8 @@ class Stock(Base):
         lazy="subquery",
     )
     barcode = relationship("Barcode", back_populates="stock", lazy="subquery")
-    created_at = Column(sq.DateTime, default=datetime.datetime.now(datetime.UTC))
+    sold_at = Column(sq.DateTime)
+    created_at = Column(sq.DateTime, default=datetime.datetime.now())
     updated_at = Column(sq.DateTime)
 
     def save(self, merge=False):
@@ -53,6 +55,8 @@ class Stock(Base):
         return {
             "id": self.id,
             "barcode": self.barcode,
+            "erm_code": self.erm_code,
+            "sold": self.sold,
             "created_by": self.created_by,
             "updated_by": self.updated_by,
             "created_at": self.created_at.isoformat(),

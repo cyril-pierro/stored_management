@@ -3,7 +3,7 @@ from fastapi import APIRouter, Depends
 from controllers.auth import Auth
 from controllers.operations import StaffOperator
 from controllers.order import OrderOperator
-from controllers.stock import StockOperator
+from controllers.stock import StockOperator, ScanStock
 from controllers.stock_adjustment import StockAdjustmentOperator as SA
 from controllers.stock_out import StockOutOperator
 from controllers.stock_running import StockRunningOperator as SR
@@ -21,6 +21,8 @@ from schemas.stock import (
     StockOutOut,
     UpdateStockAdjustmentIn,
     StockQuery,
+    BarcodeIn,
+    UpdateIn
 )
 from utils.common import bearer_schema
 
@@ -36,6 +38,27 @@ async def get_available_barcodes(access_token: str = Depends(bearer_schema)):
     ) or StaffOperator.has_engineer_permission(staff_id):
         return StockOperator.get_all_barcodes()
     raise AppError(message=PERMISSION_ERROR, status_code=401)
+
+
+@op_router.post("/barcode", response_model=Barcode)
+async def add_scan_stock(data: BarcodeIn):
+    return ScanStock.add_barcode(data)
+
+
+@op_router.get("/barcode/{barcode_id}", response_model=Barcode)
+async def get_scan_stock(barcode_id: int):
+    return ScanStock.get_barcode(barcode_id)
+
+
+@op_router.delete("/barcode/{barcode_id}", response_model=SuccessOut)
+async def delete_scan_stock(barcode_id: int):
+    ScanStock.delete_barcode(barcode_id)
+    return {"message": "Scan code deleted successfully"}
+
+
+@op_router.put("/barcode/{barcode_id}", response_model=Barcode)
+async def edit_scan_stock(barcode_id: int, data: UpdateIn):
+    return ScanStock.edit_barcode(barcode_id, data)
 
 
 @op_router.get("/stock/{id}", response_model=StockOut)

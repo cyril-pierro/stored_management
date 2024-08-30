@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Optional
+from typing import Optional, Union
 
 from pydantic import BaseModel
 from fastapi import Query
@@ -14,13 +14,33 @@ class CostOut(BaseModel):
     created_at: datetime
 
 
+class BarcodeIn(BaseModel):
+    barcode: str
+    specification: str
+    location: str
+    category: str
+
+    class Config:
+        from_attributes = True
+
+
+class UpdateIn(BaseModel):
+    barcode: str
+    specification: str
+    location: str
+
+    class Config:
+        from_attributes = True
+
+
 class Barcode(BaseModel):
     id: Optional[int]
     barcode: str
     code: str
     specification: str
     location: str
-    prices: Optional[set[str]] = None
+    created_at: Optional[datetime] = None
+    prices: Optional[set[Union[float, str]]] = None
     quantity: Optional[int] = None
 
     class Config:
@@ -41,9 +61,7 @@ class Order(BaseModel):
 
 
 class StockIn(BaseModel):
-    barcode: str
-    specification: str
-    location: str
+    barcode_id: int
     quantity: int
     cost: float
     erm_code: Optional[str] = None
@@ -54,11 +72,13 @@ class StockOut(BaseModel):
     quantity: int
     sold: bool
     barcode: Barcode
+    erm_code: Optional[str] = None
     costs: CostOut
     creator: Optional[StaffOut] = None
     modifier: Optional[StaffOut] = None
     created_at: datetime
     updated_at: Optional[datetime] = None
+    sold_at: Optional[datetime] = None
 
     class Config:
         from_attributes = True
@@ -133,5 +153,3 @@ class StockQuery(BaseModel):
     from_value: Optional[int] | None = Query(None)
     to_value: Optional[int] | None = Query(None)
     sorted: Optional[bool] | None = Query(None)
-    # created_at_min: str | None = Query(None, max_length=255)
-    # created_at_max: str | None = Query(None, max_length=255)

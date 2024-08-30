@@ -11,19 +11,20 @@ from utils.email import EmailService
 from utils.enum import OrderStatus
 from utils.enum import RunningStockStatus as RS
 from utils.session import DBSession
+from tenacity import retry, stop_after_attempt
 
 
 class OrderOperator:
     @staticmethod
-    def check_if_order_is_available(barcode: str):
-        stock = StockOperator.get_barcode(barcode)
+    def check_if_order_is_available(barcode_id: int):
+        stock = StockOperator.get_barcode(barcode_id)
         if not stock:
             raise ValueError("No stock available with barcode specified")
-        running_stock = SR.get_stock_in_inventory(barcode)
+        running_stock = SR.get_stock_in_inventory(barcode_id)
         if not running_stock:
             raise ValueError("No stock available with barcode specified")
         return {
-            "barcode": barcode,
+            "barcode": running_stock.barcode.barcode,
             "specification": stock.specification,
             "location": stock.location,
             "available": running_stock.status.name,
@@ -90,6 +91,7 @@ class OrderOperator:
         return created_order
 
     @staticmethod
+    @retry(stop=stop_after_attempt(7))
     async def notify_stock_controllers(recipients: list[Recipients], barcode: Barcode):
         emails = [recipient.email for recipient in recipients]
         await EmailService.send(

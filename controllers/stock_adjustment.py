@@ -67,7 +67,8 @@ class StockAdjustmentOperator:
         stock_adj = StockAdjustment(**values)
         value = stock_adj.save()
         grouped_data: dict[str, Any] = (
-            StockAdjustmentOperator.get_grouped_stock_adjustments_by_barcode(barcode)
+            StockAdjustmentOperator.get_grouped_stock_adjustments_by_barcode(
+                barcode)
         )
         SR.create_running_stock(
             barcode,
@@ -81,7 +82,8 @@ class StockAdjustmentOperator:
     def update_stock_adjustment(id: int, data: UpdateStockAdjustmentIn, staff_id: int):
         with DBSession() as db:
             stock_adj_found = (
-                db.query(StockAdjustment).filter(StockAdjustment.id == id).first()
+                db.query(StockAdjustment).filter(
+                    StockAdjustment.id == id).first()
             )
             if not stock_adj_found:
                 raise ValueError("Stock Adjustment record not found")
@@ -109,7 +111,8 @@ class StockAdjustmentOperator:
     def delete_stock_adjustment(id: int):
         with DBSession() as db:
             stock_adj_found = (
-                db.query(StockAdjustment).filter(StockAdjustment.id == id).first()
+                db.query(StockAdjustment).filter(
+                    StockAdjustment.id == id).first()
             )
             if not stock_adj_found:
                 raise ValueError("Stock Adjustment record not found")
@@ -142,12 +145,10 @@ class StockAdjustmentOperator:
                 .join(
                     StockAdjustment, Barcode.id == StockAdjustment.barcode_id
                 )
-                .group_by(StockAdjustment.barcode_id)
+                .group_by(StockAdjustment.barcode_id, Barcode.id, StockAdjustment.department_id)
             )
             filter_instance = StockFilter(query_params, query_to_use=query)
-            # return parse_stock_adjustment_data(query.all())
             return parse_stock_adjustment_data(filter_instance.apply())
-
 
     @staticmethod
     def get_grouped_stock_adjustments_by_barcode(barcode: str):
@@ -160,6 +161,6 @@ class StockAdjustmentOperator:
                 )
                 .join(StockAdjustment, Barcode.id == StockAdjustment.barcode_id)
                 .filter(Barcode.barcode == barcode)
-                .group_by(StockAdjustment.barcode_id)
+                .group_by(StockAdjustment.barcode_id, Barcode.id)
             )
             return parse_stock_adjustment_data(query.one_or_none())

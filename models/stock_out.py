@@ -16,7 +16,7 @@ class StockOut(Base):
     quantity = Column(sq.Integer, nullable=False)
     barcode = relationship("Barcode", back_populates="stock_out")
     orders = relationship("Orders", back_populates="stock_out")
-    created_at = Column(sq.DateTime, default=datetime.datetime.now(datetime.UTC))
+    created_at = Column(sq.DateTime, default=datetime.datetime.now())
 
     def save(self) -> "StockOut":
         with DBSession() as db:

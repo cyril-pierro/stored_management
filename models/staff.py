@@ -41,7 +41,7 @@ class Staff(Base):
     )
     orders = relationship(Orders, back_populates="staff", lazy="subquery")
     roles = relationship(Roles, back_populates="staff", lazy="subquery")
-    created_at = Column(sq.DateTime, default=datetime.datetime.now(datetime.UTC))
+    created_at = Column(sq.DateTime, default=datetime.datetime.now())
 
     def save(self, merge=False) -> "Staff":
         with DBSession() as db:

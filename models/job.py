@@ -13,7 +13,7 @@ class Job(Base):
     id = Column(sq.Integer, primary_key=True, unique=True, index=True)
     name = Column(sq.String(200), nullable=False, unique=True)
     staff = relationship("Staff", back_populates="job")
-    created_at = Column(sq.DateTime, default=datetime.datetime.now(datetime.UTC))
+    created_at = Column(sq.DateTime, default=datetime.datetime.now())
 
     def save(self, merge=False) -> "Job":
         with DBSession() as db:
