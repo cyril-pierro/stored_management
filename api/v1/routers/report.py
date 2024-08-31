@@ -25,9 +25,14 @@ def get_stock_reports(access_token: str = Depends(bearer_schema)):
     return data
 
 
-@op_router.get("/erm", response_model=list[ErmReportOut])
-def get_erm_report(access_token: str = Depends(bearer_schema)):
-    staff_id = Auth.verify_token(token=access_token.credentials, for_="login")
-    if not StaffOperator.has_stock_controller_permission(staff_id=staff_id):
-        raise AppError(message=PERMISSION_ERROR, status_code=401)
+@op_router.get(
+        "/erm",
+        # response_model=list[ErmReportOut]
+    )
+def get_erm_report(
+    # access_token: str = Depends(bearer_schema)
+):
+    # staff_id = Auth.verify_token(token=access_token.credentials, for_="login")
+    # if not StaffOperator.has_stock_controller_permission(staff_id=staff_id):
+    #     raise AppError(message=PERMISSION_ERROR, status_code=401)
     return ReportDashboard.get_erm_report_data()

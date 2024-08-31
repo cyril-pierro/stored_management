@@ -60,5 +60,5 @@ class Stock(Base):
             "created_by": self.created_by,
             "updated_by": self.updated_by,
             "created_at": self.created_at.isoformat(),
-            "updated_at": self.updated_at.isoformat(),
+            # "updated_at": self.updated_at.isoformat(),
         }

@@ -78,19 +78,26 @@ class ReportDashboard:
     @staticmethod
     def get_erm_report_data():
         with DBSession() as db:
-            values = db.query(Orders, Stock).join(Stock, Orders.barcode_id == Stock.barcode_id) \
-                .group_by(Orders.barcode_id, Orders.id, Stock.id)\
-                .filter(Stock.erm_code.is_not(None)).all()
-            return [
-                {
-                    "id": order.id,
-                    "date": order.created_at.isoformat(),
-                    "event_number": order.job_number,
-                    "part_code": order.barcode.barcode,
-                    "part_type": order.part_name,
-                    "part_description": order.barcode.specification,
-                    "quantity": order.quantity,
-                    "erm_code": stock.erm_code,
-                }
-                for order, stock in values
-            ]
+            # values = db.query(Orders, Stock).join(Stock, Orders.barcode_id == Stock.barcode_id) \
+            #     .group_by(Orders.barcode_id, Orders.id, Stock.id)\
+            #     .filter(Stock.erm_code.is_not(None)).all()
+            # return [
+            #     {
+            #         "id": order.id,
+            #         "date": order.created_at.isoformat(),
+            #         "event_number": order.job_number,
+            #         "part_code": order.barcode.barcode,
+            #         "part_type": order.part_name,
+            #         "part_description": order.barcode.specification,
+            #         "quantity": order.quantity,
+            #         "erm_code": stock.erm_code,
+            #     }
+            #     for order, stock in values
+            # ]
+            values = db.query(Orders, Stock).outerjoin(
+                Stock, Orders.barcode_id == Stock.barcode_id
+            ).group_by(Orders.barcode_id, Orders.id, Stock.id
+                       ).filter(Stock.erm_code.is_not(None)).all()
+            for a, b in values:
+                print("data ---->", a.stock_out[0].json())
+        return []

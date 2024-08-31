@@ -51,7 +51,7 @@ class StockOperator:
     @staticmethod
     def get_all_barcodes():
         with DBSession() as db:
-            return db.query(Barcode).all()
+            return db.query(Barcode).order_by(Barcode.id.desc()).all()
 
     @staticmethod
     def get_or_generate_cost(
@@ -262,6 +262,7 @@ class ScanStock:
             last_barcode = db.query(Barcode).filter(
                 Barcode.code.ilike(f"%SK{data.category.upper()[0]}%")
             ).order_by(Barcode.id.desc()).first()
+            print("Last barcode", str(last_barcode))
         data.__dict__["code"] = generate_codes(
             previous_code=last_barcode.code if last_barcode else None,
             category=data.category
