@@ -41,7 +41,7 @@ class OrderOperator:
 
     @staticmethod
     def create_order_for_stock_with(
-        barcode: str, data: OrderIn, user_id: int, background_task: BackgroundTasks
+        barcode: str, data: OrderIn, user_id: int
     ):
         running_stock = SR.get_stock_in_inventory(barcode)
         if not running_stock:
