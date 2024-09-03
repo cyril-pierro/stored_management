@@ -58,8 +58,8 @@ class StockOutOperator:
                 .join(StockOut, Barcode.id == StockOut.barcode_id)
                 .group_by(StockOut.barcode_id, Barcode.id)
             )
-            filter_instance = StockFilter(query_params, query_to_use=query)
-            return parse_stock_out_data(filter_instance.apply())
+        filter_instance = StockFilter(query_params, query_to_use=query)
+        return parse_stock_out_data(filter_instance.apply())
 
     @staticmethod
     def get_group_all_stock_ids_data_by_stock_id(barcode: str):
@@ -73,4 +73,4 @@ class StockOutOperator:
                 .filter(Barcode.barcode == barcode)
                 .group_by(StockOut.barcode_id, Barcode.id)
             )
-            return parse_stock_out_data(query.one_or_none())
+        return parse_stock_out_data(query.one_or_none())

@@ -45,7 +45,9 @@ class StockAdjustmentOperator:
     @staticmethod
     def get_all_stock_adjustments():
         with DBSession() as db:
-            return db.query(StockAdjustment).order_by(StockAdjustment.id.desc()).all()
+            data = db.query(StockAdjustment).order_by(
+                StockAdjustment.id.desc()).all()
+        return data
 
     @staticmethod
     def create_stock_adjustment(barcode: str, data: StockAdjustmentIn, staff_id: int):
@@ -95,17 +97,17 @@ class StockAdjustmentOperator:
             db.add(stock_adj_found)
             db.commit()
             db.refresh(stock_adj_found)
-            grouped_data: dict[str, Any] = (
-                StockAdjustmentOperator.get_grouped_stock_adjustments_by_barcode(
-                    stock_adj_found.barcode.barcode
-                )
+        grouped_data: dict[str, Any] = (
+            StockAdjustmentOperator.get_grouped_stock_adjustments_by_barcode(
+                stock_adj_found.barcode.barcode
             )
-            SR.create_running_stock(
-                stock_adj_found.barcode.barcode,
-                stock_operator=SO,
-                adjustment_quantity=grouped_data.get("quantity"),
-            )
-            return stock_adj_found
+        )
+        SR.create_running_stock(
+            stock_adj_found.barcode.barcode,
+            stock_operator=SO,
+            adjustment_quantity=grouped_data.get("quantity"),
+        )
+        return stock_adj_found
 
     @staticmethod
     def delete_stock_adjustment(id: int):
@@ -119,19 +121,19 @@ class StockAdjustmentOperator:
             barcode = stock_adj_found.barcode.barcode
             db.delete(stock_adj_found)
             db.commit()
-            grouped_data: dict[str, Any] = (
-                StockAdjustmentOperator.get_grouped_stock_adjustments_by_barcode(
-                    barcode
-                )
+        grouped_data: dict[str, Any] = (
+            StockAdjustmentOperator.get_grouped_stock_adjustments_by_barcode(
+                barcode
             )
-            SR.create_running_stock(
-                stock_adj_found.barcode.barcode,
-                stock_operator=SO,
-                adjustment_quantity=(
-                    -1 if not grouped_data else grouped_data.get("quantity", 0)
-                ),
-            )
-            return True
+        )
+        SR.create_running_stock(
+            stock_adj_found.barcode.barcode,
+            stock_operator=SO,
+            adjustment_quantity=(
+                -1 if not grouped_data else grouped_data.get("quantity", 0)
+            ),
+        )
+        return True
 
     @staticmethod
     def group_all_stock_adjustments_for_stocks(query_params: StockQuery):
@@ -147,8 +149,8 @@ class StockAdjustmentOperator:
                 )
                 .group_by(StockAdjustment.barcode_id, Barcode.id, StockAdjustment.department_id)
             )
-            filter_instance = StockFilter(query_params, query_to_use=query)
-            return parse_stock_adjustment_data(filter_instance.apply())
+        filter_instance = StockFilter(query_params, query_to_use=query)
+        return parse_stock_adjustment_data(filter_instance.apply())
 
     @staticmethod
     def get_grouped_stock_adjustments_by_barcode(barcode: str):
@@ -163,4 +165,4 @@ class StockAdjustmentOperator:
                 .filter(Barcode.barcode == barcode)
                 .group_by(StockAdjustment.barcode_id, Barcode.id, StockAdjustment.department_id)
             )
-            return parse_stock_adjustment_data(query.one_or_none())
+        return parse_stock_adjustment_data(query.one_or_none())

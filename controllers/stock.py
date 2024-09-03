@@ -75,7 +75,7 @@ class StockOperator:
                 db.commit()
                 db.refresh(new_cost)
                 return new_cost
-            return cost_found
+        return cost_found
 
     @staticmethod
     def add_stock(data: StockIn, staff_id: int):
@@ -133,7 +133,7 @@ class StockOperator:
                         stock_obj=stock,
                         quantity=old_quantity,
                     )
-            return True
+        return True
 
     @staticmethod
     def add_cost_evaluation_data(stock_obj: Stock, quantity: int):
@@ -243,7 +243,7 @@ class StockOperator:
             )
             db.delete(stock_found)
             db.commit()
-            return True
+        return True
 
 
 class ScanStock:
@@ -262,7 +262,6 @@ class ScanStock:
             last_barcode = db.query(Barcode).filter(
                 Barcode.code.ilike(f"%SK{data.category.upper()[0]}%")
             ).order_by(Barcode.id.desc()).first()
-            print("Last barcode", str(last_barcode))
         data.__dict__["code"] = generate_codes(
             previous_code=last_barcode.code if last_barcode else None,
             category=data.category
@@ -278,7 +277,7 @@ class ScanStock:
             if not found_barcode:
                 raise AppError(
                     message="Scan Barcode does not exist", status_code=404)
-            return found_barcode
+        return found_barcode
         
     @staticmethod
     def edit_barcode(barcode_id: int, data: UpdateIn) -> Barcode:
@@ -303,4 +302,4 @@ class ScanStock:
                     message="Action denied, Scan Barcode is in use as a Stock", status_code=400)
             db.delete(found_barcode)
             db.commit()
-            return True
+        return True
