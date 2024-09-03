@@ -1,5 +1,3 @@
-from fastapi import BackgroundTasks
-
 from controllers.stock import StockOperator
 from controllers.stock_out import StockOutOperator as SO
 from controllers.stock_running import StockRunningOperator as SR

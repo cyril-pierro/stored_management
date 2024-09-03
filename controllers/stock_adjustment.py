@@ -89,9 +89,9 @@ class StockAdjustmentOperator:
                 raise ValueError("Stock Adjustment record not found")
             stock_adj_found.department_id = data.department_id
             stock_adj_found.quantity = data.quantity
-            stock_adj_found.updated_at = datetime.datetime.now(datetime.UTC)
+            stock_adj_found.updated_at = datetime.datetime.now()
             stock_adj_found.updated_by = staff_id
-            stock_adj_found.updated_at = datetime.datetime.now(datetime.UTC)
+            stock_adj_found.updated_at = datetime.datetime.now()
             db.add(stock_adj_found)
             db.commit()
             db.refresh(stock_adj_found)

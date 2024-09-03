@@ -118,7 +118,7 @@ class StockOperator:
                     )
                     if stock.quantity == 0:
                         stock.sold = True
-                    stock.sold_at = datetime.datetime.now(datetime.UTC)
+                    stock.sold_at = datetime.datetime.now()
                     db.commit()
                     db.refresh(stock)
                 else:
@@ -126,7 +126,7 @@ class StockOperator:
                     quantity = quantity - stock.quantity
                     stock.quantity = 0
                     stock.sold = True
-                    stock.sold_at = datetime.datetime.now(datetime.UTC)
+                    stock.sold_at = datetime.datetime.now()
                     db.commit()
                     db.refresh(stock)
                     StockOperator.add_cost_evaluation_data(
@@ -207,12 +207,12 @@ class StockOperator:
                 status_code=400,
             )
         # update stock details
-        stock_found.updated_at = datetime.datetime.now(datetime.UTC)
+        stock_found.updated_at = datetime.datetime.now()
         stock_found.barcode_id = data.barcode_id
         stock_found.updated_by = staff_id
         stock_found.quantity = quantity
         stock_found.erm_code = data.erm_code
-        stock_found.updated_at = datetime.datetime.now(datetime.UTC)
+        stock_found.updated_at = datetime.datetime.now()
         cost_id = StockOperator.get_or_generate_cost(cost).id
         stock_found.cost_id = cost_id
         SR.create_running_stock(
