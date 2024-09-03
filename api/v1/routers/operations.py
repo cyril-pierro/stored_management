@@ -51,15 +51,15 @@ async def get_staff_roles():
 @op_router.get("/staff/{id}", response_model=StaffOut)
 async def get_staff_member(id: int, access_token: str = Depends(bearer_schema)):
     staff_id = Auth.verify_token(token=access_token.credentials, for_="login")
-    if not StaffOperator.has_stock_controller_permission(staff_id=staff_id):
-        raise AppError(
-            message=PERMISSION_DENIED,
-            status_code=401,
-        )
-    staff = StaffOperator.get_staff(id)
-    if not staff:
-        raise ValueError("No staff found")
-    return staff
+    if StaffOperator.has_stock_controller_permission(staff_id=staff_id) or StaffOperator.has_engineer_permission(staff_id):
+        staff = StaffOperator.get_staff(id)
+        if not staff:
+            raise ValueError("No staff found")
+        return staff
+    raise AppError(
+        message=PERMISSION_DENIED,
+        status_code=401,
+    )
 
 
 @op_router.post("/staff", response_model=StaffOut)

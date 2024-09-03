@@ -13,6 +13,7 @@ class StaffIn(BaseModel):
 
 
 class Staff(BaseModel):
+    id: int
     staff_id_number: str
     name: str
     job: JobOut
