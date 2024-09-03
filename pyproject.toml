@@ -6,16 +6,21 @@ authors = ["cyril-pierro <fiopapa32@gmail.com>"]
 readme = "README.md"
 
 [tool.poetry.dependencies]
-python = "^3.11"
+python = "^3.10"
 sqlalchemy = "^2.0.32"
 pydantic-settings = "^2.4.0"
 fastapi = "^0.112.0"
 fastapi-pagination = "^0.12.26"
 passlib = "^1.7.4"
-jose = "^1.0.0"
 redis = "^5.0.8"
 fastapi-mail = "^1.4.1"
-tenacity = "^9.0.0"
+psycopg2-binary = "^2.9.9"
+pycryptodome = "^3.20.0"
+uvicorn = "^0.30.6"
+alembic = "^1.13.2"
+python-jose = "^3.3.0"
+celery = "^5.4.0"
+asgiref = "^3.8.1"
 
 
 [build-system]

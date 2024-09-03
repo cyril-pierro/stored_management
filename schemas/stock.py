@@ -150,6 +150,6 @@ class CostEvaluationOut(BaseModel):
 
 
 class StockQuery(BaseModel):
-    from_value: Optional[int] | None = Query(None)
-    to_value: Optional[int] | None = Query(None)
-    sorted: Optional[bool] | None = Query(None)
+    from_value: Union[Optional[int], None] = Query(None)
+    to_value: Union[Optional[int],None] = Query(None)
+    sorted: Union[Optional[bool], None] = Query(None)

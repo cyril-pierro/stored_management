@@ -7,11 +7,10 @@ from models.email import Recipients
 from models.order import Orders
 from models.barcode import Barcode
 from schemas.order import OrderIn
-from utils.email import EmailService
 from utils.enum import OrderStatus
 from utils.enum import RunningStockStatus as RS
 from utils.session import DBSession
-from tenacity import retry, stop_after_attempt
+from cron.task import send_email
 
 
 class OrderOperator:
@@ -80,8 +79,7 @@ class OrderOperator:
         )
         if stock_runner.status.value == RS.re_order.value:
             # send email to recipients
-            background_task.add_task(
-                OrderOperator.notify_stock_controllers,
+            OrderOperator.notify_stock_controllers(
                 recipients=Recipients.get_all_recipients(),
                 barcode=stock_runner.barcode,
             )
@@ -91,10 +89,9 @@ class OrderOperator:
         return created_order
 
     @staticmethod
-    @retry(stop=stop_after_attempt(7))
-    async def notify_stock_controllers(recipients: list[Recipients], barcode: Barcode):
+    def notify_stock_controllers(recipients: list[Recipients], barcode: Barcode):
         emails = [recipient.email for recipient in recipients]
-        await EmailService.send(
+        send_email.delay(
             email=emails,
             subject="Stock Re-Order Notification Alert",
             content={

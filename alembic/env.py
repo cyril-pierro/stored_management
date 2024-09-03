@@ -12,10 +12,12 @@ from models.email import Recipients
 from models.job import Job
 from models.order import Orders
 from models.staff import Staff
+from models.roles import Roles
 from models.stock import Stock
 from models.stock_adjustment import StockAdjustment
 from models.stock_out import StockOut
 from models.stock_running import StockRunning
+from models.evaluation import CostEvaluation
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.

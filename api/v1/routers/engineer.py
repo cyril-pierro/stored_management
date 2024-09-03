@@ -1,4 +1,4 @@
-from fastapi import APIRouter, BackgroundTasks, Depends
+from fastapi import APIRouter, Depends
 
 from controllers.auth import Auth
 from controllers.operations import StaffOperator
@@ -34,12 +34,11 @@ async def get_number_of_orders_done(access_token: str = Depends(bearer_schema)):
 async def buy_or_collect_stock_from_store(
     barcode: str,
     data: OrderIn,
-    background_tasks: BackgroundTasks,
     access_token: str = Depends(bearer_schema),
 ):
     staff_id = Auth.verify_token(token=access_token.credentials, for_="login")
     if not StaffOperator.has_engineer_permission(staff_id):
         raise AppError(message=PERMISSION_ERROR, status_code=401)
     return OO.create_order_for_stock_with(
-        barcode=barcode, data=data, user_id=staff_id, background_task=background_tasks
+        barcode=barcode, data=data, user_id=staff_id
     )

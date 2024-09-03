@@ -38,11 +38,18 @@ def validation_for_db_errors(
     request: Request, exec: Union[IntegrityError, DBAPIError]
 ) -> responses.JSONResponse:
     error_msg = exec.args[0]
+    status_code = 422
     if "UNIQUE" in error_msg:
         error_msg = (
             f"{error_msg.split(':')[1].split('.')[1].capitalize()} already exists"
         )
-    return responses.JSONResponse(status_code=422, content={"message": error_msg})
+    if "FATAL:  sorry, too many clients already" in error_msg:
+        error_msg = "Internal Server Error"
+        status_code = 500
+    return responses.JSONResponse(
+        status_code=status_code,
+        content={"message": error_msg}
+    )
 
 
 def validation_app_error(request: Request, exec: AppError):
