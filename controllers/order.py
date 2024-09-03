@@ -31,7 +31,8 @@ class OrderOperator:
     @staticmethod
     def get_all_orders():
         with DBSession() as db:
-            return db.query(Orders).order_by(Orders.id.desc()).all()
+            data = db.query(Orders).order_by(Orders.id.desc()).all()
+        return data
 
     @staticmethod
     def get_number_of_orders():

@@ -39,7 +39,8 @@ class StockOutOperator:
     @staticmethod
     def get_all_stocks():
         with DBSession() as db:
-            return db.query(StockOut).order_by(StockOut.id.desc()).all()
+            data = db.query(StockOut).order_by(StockOut.id.desc()).all()
+        return data
 
     @staticmethod
     def create_stock_out(barcode_id: int, quantity: int, order_id: int = None):

@@ -30,7 +30,7 @@ class JobOperator:
                 found_job = db.query(Job).filter(Job.id == name_or_id).first()
             else:
                 found_job = db.query(Job).filter(Job.name == name_or_id).first()
-            return found_job
+        return found_job
 
     @staticmethod
     def get_all_job_titles():
@@ -136,7 +136,7 @@ class StaffOperator:
                 found_department = (
                     db.query(Staff).filter(Staff.staff_id_number == name_or_id).first()
                 )
-            return found_department
+        return found_department
 
     @staticmethod
     def update_staff_by_id(staff_id: int, data: UpdateStaffIn) -> Staff:
@@ -161,12 +161,14 @@ class StaffOperator:
     @staticmethod
     def get_all_staff_members() -> list[Staff]:
         with DBSession() as db:
-            return db.query(Staff).all()
+            data = db.query(Staff).all()
+        return data
 
     @staticmethod
     def get_all_staff_roles() -> list[Roles]:
         with DBSession() as db:
-            return db.query(Roles).all()
+            data = db.query(Roles).all()
+        return data
 
     @staticmethod
     def validate_staff_credentials(data: LoginIn) -> Staff:
