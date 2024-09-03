@@ -161,6 +161,6 @@ class StockAdjustmentOperator:
                 )
                 .join(StockAdjustment, Barcode.id == StockAdjustment.barcode_id)
                 .filter(Barcode.barcode == barcode)
-                .group_by(StockAdjustment.barcode_id, Barcode.id)
+                .group_by(StockAdjustment.barcode_id, Barcode.id, StockAdjustment.department_id)
             )
             return parse_stock_adjustment_data(query.one_or_none())
