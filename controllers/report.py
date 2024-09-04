@@ -2,10 +2,12 @@ from models.staff import Staff
 from models.department import Department
 from models.stock_adjustment import StockAdjustment
 from models.order import Orders
-from models.stock import Stock
+from models.barcode import Barcode
+from controllers.stock_running import StockRunningOperator
 from utils.session import DBSession
 from sqlalchemy import func, select, desc
 from parser.report import ReportParser
+from typing import Any
 
 
 class ReportDashboard:
@@ -75,13 +77,10 @@ class ReportDashboard:
     @staticmethod
     def get_erm_report_data():
         with DBSession() as db:
-            stmt = (
-                select(Orders.id, Orders, func.min(Stock.erm_code).label("min_erm_code"))
-                .join(Stock, Orders.barcode_id == Stock.barcode_id)
-                .where(Stock.erm_code.is_not(None))
-                .group_by(Orders.id).order_by(desc(Orders.id))
-            )
-            results = db.execute(stmt).all()
+            orders = db.query(Orders).filter(Orders.barcode.has(
+                Barcode.erm_code.is_not(None))).order_by(Orders.id.desc()).all()
+        if len(orders) == 0:
+            return []
         return [
             {
                 "id": order.id,
@@ -91,7 +90,11 @@ class ReportDashboard:
                 "part_type": order.part_name,
                 "part_description": order.barcode.specification,
                 "quantity": order.quantity,
-                "erm_code": erm_code,
+                "erm_code": order.barcode.erm_code,
             }
-            for _, order, erm_code in set(results)
+            for order in orders
         ]
+
+    # @staticmethod
+    # def get_analysis_for_barcode(barcode: str) -> dict[str, Any]:
+    #     running_stock = StockRunningOperator.get_stock_in_inventory(barcode)

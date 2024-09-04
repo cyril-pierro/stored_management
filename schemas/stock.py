@@ -19,6 +19,7 @@ class BarcodeIn(BaseModel):
     specification: str
     location: str
     category: str
+    erm_code: Optional[str] = None
 
     class Config:
         from_attributes = True
@@ -28,6 +29,7 @@ class UpdateIn(BaseModel):
     barcode: str
     specification: str
     location: str
+    erm_code: Optional[str] = None
 
     class Config:
         from_attributes = True
@@ -39,6 +41,7 @@ class Barcode(BaseModel):
     code: str
     specification: str
     location: str
+    erm_code: Optional[str] = None
     created_at: Optional[datetime] = None
     prices: Optional[set[Union[float, str]]] = None
     quantity: Optional[int] = None
@@ -64,7 +67,6 @@ class StockIn(BaseModel):
     barcode_id: int
     quantity: int
     cost: float
-    erm_code: Optional[str] = None
 
 
 class StockOut(BaseModel):
@@ -72,7 +74,6 @@ class StockOut(BaseModel):
     quantity: int
     sold: bool
     barcode: Barcode
-    erm_code: Optional[str] = None
     costs: CostOut
     creator: Optional[StaffOut] = None
     modifier: Optional[StaffOut] = None

@@ -287,6 +287,7 @@ class ScanStock:
         barcode_found.barcode = data.barcode
         barcode_found.location = data.location
         barcode_found.specification = data.specification
+        barcode_found.erm_code = data.erm_code or barcode_found.erm_code
         return barcode_found.save(merge=True)
         
     @staticmethod

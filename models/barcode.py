@@ -16,6 +16,7 @@ class Barcode(Base):
     specification = Column(sq.String, nullable=False)
     location = Column(sq.String, nullable=False)
     category = Column(sq.String, nullable=False)
+    erm_code = Column(sq.String, nullable=True)
     stock = relationship(
         "Stock",
         back_populates="barcode",
