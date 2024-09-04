@@ -4,7 +4,7 @@ from models.stock_adjustment import StockAdjustment
 from models.order import Orders
 from models.stock import Stock
 from utils.session import DBSession
-from sqlalchemy import func
+from sqlalchemy import func, select
 from parser.report import ReportParser
 
 
@@ -75,10 +75,12 @@ class ReportDashboard:
     @staticmethod
     def get_erm_report_data():
         with DBSession() as db:
-            values = db.query(Orders, Stock).join(Stock, Orders.barcode_id == Stock.barcode_id) \
-                .group_by(Orders.barcode_id, Orders.id, Stock.id)\
-                .order_by(Orders.id.desc())\
-                .filter(Stock.erm_code.is_not(None)).all()
+            stmt = (
+                    select(Orders, Stock.erm_code)
+                    .join(Stock, Orders.barcode_id == Stock.barcode_id)
+                    .where(Stock.erm_code.is_not(None))
+                )
+            results = db.execute(stmt).all()
         return [
             {
                 "id": order.id,
@@ -88,7 +90,7 @@ class ReportDashboard:
                 "part_type": order.part_name,
                 "part_description": order.barcode.specification,
                 "quantity": order.quantity,
-                "erm_code": stock.erm_code,
+                "erm_code": erm_code,
             }
-            for order, stock in values
+            for order, erm_code in set(results)
         ]
