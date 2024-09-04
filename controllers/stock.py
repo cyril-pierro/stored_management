@@ -119,6 +119,7 @@ class StockOperator:
                     if stock.quantity == 0:
                         stock.sold = True
                     stock.sold_at = datetime.datetime.now()
+                    db.add(stock)
                     db.commit()
                     db.refresh(stock)
                 else:
@@ -127,6 +128,7 @@ class StockOperator:
                     stock.quantity = 0
                     stock.sold = True
                     stock.sold_at = datetime.datetime.now()
+                    db.add(stock)
                     db.commit()
                     db.refresh(stock)
                     StockOperator.add_cost_evaluation_data(
