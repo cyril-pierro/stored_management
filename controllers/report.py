@@ -4,7 +4,7 @@ from models.stock_adjustment import StockAdjustment
 from models.order import Orders
 from models.stock import Stock
 from utils.session import DBSession
-from sqlalchemy import func, select
+from sqlalchemy import func, select, distinct
 from parser.report import ReportParser
 
 
@@ -81,6 +81,7 @@ class ReportDashboard:
                     .where(Stock.erm_code.is_not(None))
                 )
             results = db.execute(stmt).all()
+            print("results", set(results))
         return [
             {
                 "id": order.id,
