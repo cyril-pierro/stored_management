@@ -89,7 +89,6 @@ class StockOperator:
             barcode_id=barcode_found.id,
             created_by=staff_id,
             cost_id=cost_created.id,
-            erm_code=data.erm_code,
             quantity=quantity_allocated,
         )
         value = new_stock.save()
@@ -213,7 +212,6 @@ class StockOperator:
         stock_found.barcode_id = data.barcode_id
         stock_found.updated_by = staff_id
         stock_found.quantity = quantity
-        stock_found.erm_code = data.erm_code
         stock_found.updated_at = datetime.datetime.now()
         cost_id = StockOperator.get_or_generate_cost(cost).id
         stock_found.cost_id = cost_id
