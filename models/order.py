@@ -46,7 +46,6 @@ class Orders(Base):
             "quantity": self.quantity,
             "restrictions": self.restrictions.value,
             "created_at": self.created_at.isoformat(),
-            # "updated_at": self.created_at.isoformat(),
         }
     
     def erm_report(self) -> dict[str, Any]:
@@ -60,4 +59,3 @@ class Orders(Base):
             "quantity": self.quantity,
             "erm_code": self.barcode.stock[0].erm_code,
         }
-# Stock.erm_code.is_not(None)
