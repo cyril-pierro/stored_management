@@ -112,12 +112,12 @@ class StockAdjustmentGroupOut(Barcode):
 
 class StockOutIn(BaseModel):
     quantity: int
-    # barcode: str
 
 
 class StockOutOut(BaseModel):
     id: int
     quantity: int
+    cost: float
     barcode: Barcode
     orders: Optional[Order]
     created_at: datetime
