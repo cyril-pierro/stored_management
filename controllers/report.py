@@ -110,9 +110,7 @@ class ReportDashboard:
         if not barcode_found:
             raise ValueError("No barcode information found")
         
-        print("from_datetime ", from_datetime)
         to_datetime = to_datetime + timedelta(hours=23, minutes=59, seconds=59)
-        print("to datetime ", to_datetime)
         running_stock = StockRunningOperator.get_running_stock_report(
             barcode, to_datetime
         )
@@ -129,7 +127,7 @@ class ReportDashboard:
             "available_stock": (
                 {
                     "quantity": running_stock.remaining_quantity,
-                    "created_at": running_stock.created_at.isoformat(),
+                    "created_at": datetime.now().isoformat(),
                 }
                 if running_stock
                 else {}
