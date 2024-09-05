@@ -91,11 +91,11 @@ class StockOutOperator:
         to_datetime: Any
     ):
         if not from_datetime:
-            condition = (StockOut.created_at <= to_datetime)
+            condition = StockOut.created_at <= to_datetime
         else:
-            condition = (StockOut.created_at.between(
+            condition = StockOut.created_at.between(
                 from_datetime, to_datetime
-            ))
+            )
 
         with DBSession() as db:
             return db.query(StockOut).filter(

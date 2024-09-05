@@ -61,7 +61,7 @@ def get_erm_report(
 async def get_analysis_report(
     barcode: str,
     from_: Optional[str] = Query(None),
-    to_: Optional[str] = Query(default=datetime.now().date()),
+    to_: Optional[str] = Query(default=str(datetime.now().date())),
     access_token: str = Depends(bearer_schema)
 ):
     """

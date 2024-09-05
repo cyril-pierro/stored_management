@@ -25,7 +25,8 @@ class StockRunningOperator:
         order_quantity: int = 0,
         should_delete_quantity: bool = False,
     ) -> StockRunning:
-        stock_data = stock_operator.get_grouped_stocks_with_stock_barcode(barcode)
+        stock_data = stock_operator.get_grouped_stocks_with_stock_barcode(
+            barcode)
         if not stock_data:
             raise ValueError("No stocks available for barcode")
 
@@ -47,7 +48,8 @@ class StockRunningOperator:
             return updated_status.save(merge=True)
         else:
             # Create new stock
-            remaining_quantity = quantity - (adjustment_quantity + out_quantity)
+            remaining_quantity = quantity - \
+                (adjustment_quantity + out_quantity)
             new_running_stock = StockRunning(
                 barcode_id=stock_data.get("id"),
                 stock_quantity=quantity,
@@ -106,14 +108,16 @@ class StockRunningOperator:
             else RunningStockStatus.available.name
         )
         return stock
-    
+
     @staticmethod
     def get_stock_in_inventory(barcode_id: Union[int, str]) -> StockRunning:
         with DBSession() as db:
             if isinstance(barcode_id, int):
-                barcode_found = db.query(Barcode).filter(Barcode.id == barcode_id).first()
+                barcode_found = db.query(Barcode).filter(
+                    Barcode.id == barcode_id).first()
             else:
-                barcode_found = db.query(Barcode).filter(Barcode.barcode == barcode_id).first()
+                barcode_found = db.query(Barcode).filter(
+                    Barcode.barcode == barcode_id).first()
             if not barcode_found:
                 raise ValueError("Could not find barcode in inventory")
             return (
@@ -121,25 +125,21 @@ class StockRunningOperator:
                 .filter(StockRunning.barcode_id == barcode_found.id)
                 .first()
             )
-        
+
     @staticmethod
     def get_running_stock_report(
         barcode_id: Union[int, str],
         report_on: Any = dt.now()
     ) -> StockRunning:
         with DBSession() as db:
-            barcode_found = db.query(Barcode).filter(Barcode.barcode == barcode_id).first()
-            if not barcode_found:
-                raise ValueError("Could not find barcode in inventory")
-            return (
-                db.query(StockRunning)
+            return db.query(StockRunning)\
                 .filter(
                     and_(
-                        StockRunning.barcode_id == barcode_found.id,
-                        StockRunning.created_at <= report_on
+                        StockRunning.barcode.has(
+                            Barcode.barcode == barcode_id),
+                        StockRunning.created_at <= report_on,
                     )
-                ).first()
-            )
+            ).first()
 
     @staticmethod
     def get_all_running_stocks(query_params: StockQuery = None):

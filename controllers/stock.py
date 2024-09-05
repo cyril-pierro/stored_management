@@ -234,11 +234,11 @@ class StockOperator:
             specified barcode.
         """
         if not from_datetime:
-            condition = (Stock.created_at <= to_datetime)
+            condition = Stock.created_at <= to_datetime
         else:
-            condition = (Stock.created_at.between(
+            condition = Stock.created_at.between(
                 from_datetime, to_datetime
-            ))
+            )
 
         with DBSession() as db:
             return db.query(Stock)\

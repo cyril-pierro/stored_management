@@ -10,7 +10,7 @@ from utils.session import DBSession
 from sqlalchemy import func
 from parser.report import ReportParser
 from typing import Any
-from datetime import datetime
+from datetime import datetime, timedelta
 
 
 class ReportDashboard:
@@ -31,8 +31,7 @@ class ReportDashboard:
             subq_adjustments = (
                 db.query(
                     StockAdjustment.department_id,
-                    func.sum(StockAdjustment.quantity).label(
-                        "adjustment_amount"),
+                    func.sum(StockAdjustment.quantity).label("adjustment_amount"),
                 )
                 .group_by(StockAdjustment.department_id)
                 .subquery()
@@ -40,8 +39,7 @@ class ReportDashboard:
 
             subq_orders = (
                 db.query(
-                    Staff.department_id, func.sum(
-                        Orders.quantity).label("sale_amount")
+                    Staff.department_id, func.sum(Orders.quantity).label("sale_amount")
                 )
                 .join(Orders, Staff.id == Orders.staff_id)
                 .group_by(Staff.department_id)
@@ -67,12 +65,10 @@ class ReportDashboard:
         with DBSession() as db:
             data = (
                 db.query(
-                    Department.name, func.count(
-                        Orders.id), func.sum(Orders.quantity)
+                    Department.name, func.count(Orders.id), func.sum(Orders.quantity)
                 )
                 .outerjoin(
-                    Orders, Orders.staff.has(
-                        Staff.department_id == Department.id)
+                    Orders, Orders.staff.has(Staff.department_id == Department.id)
                 )
                 .group_by(Department.name)
                 .all()
@@ -110,33 +106,56 @@ class ReportDashboard:
         from_datetime: Any = None,
         to_datetime: Any = None,
     ) -> dict[str, Any]:
+        barcode_found = StockOperator.get_barcode(barcode)
+        if not barcode_found:
+            raise ValueError("No barcode information found")
+        
+        print("from_datetime ", from_datetime)
+        to_datetime = to_datetime + timedelta(hours=23, minutes=59, seconds=59)
+        print("to datetime ", to_datetime)
         running_stock = StockRunningOperator.get_running_stock_report(
             barcode, to_datetime
         )
         stock_out = StockOutOperator.get_stock_out_data_for_barcode(
-            barcode, from_datetime, to_datetime)
+            barcode, from_datetime, to_datetime
+        )
 
-        stocks = StockOperator.get_stock_report(
-            barcode, from_datetime, to_datetime)
+        stocks = StockOperator.get_stock_report(barcode, from_datetime, to_datetime)
         return {
-            "available_stock": {
-                "quantity": running_stock.remaining_quantity,
-                "created_at": running_stock.created_at.isoformat(),
+            "description": {
+                "barcode": barcode,
+                "specification": barcode_found.specification,
             },
-            "stock_out": [
+            "available_stock": (
                 {
-                    "created_at": stock.created_at.isoformat(),
-                    "quantity": stock.quantity,
-                    "cost": stock.cost,
+                    "quantity": running_stock.remaining_quantity,
+                    "created_at": running_stock.created_at.isoformat(),
                 }
-                for stock in stock_out
-            ],
-            "stocks": [
-                {
-                    "quantity": stock.quantity,
-                    "cost": stock.costs.cost,
-                    "created_at": stock.created_at.isoformat(),
-                }
-                for stock in stocks
-            ],
+                if running_stock
+                else {}
+            ),
+            "stock_out": (
+                [
+                    {
+                        "created_at": stock.created_at.isoformat(),
+                        "quantity": stock.quantity,
+                        "cost": stock.cost,
+                    }
+                    for stock in stock_out
+                ]
+                if stock_out
+                else []
+            ),
+            "stock_in": (
+                [
+                    {
+                        "quantity": stock.quantity,
+                        "cost": stock.costs.cost,
+                        "created_at": stock.created_at.isoformat(),
+                    }
+                    for stock in stocks
+                ]
+                if stocks
+                else []
+            ),
         }
