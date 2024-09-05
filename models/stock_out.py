@@ -14,6 +14,7 @@ class StockOut(Base):
     barcode_id = Column(sq.Integer, ForeignKey("barcode.id"), nullable=False)
     order_id = Column(sq.Integer, ForeignKey("orders.id"))
     quantity = Column(sq.Integer, nullable=False)
+    cost = Column(sq.Float, nullable=True)
     barcode = relationship("Barcode", back_populates="stock_out")
     orders = relationship("Orders", back_populates="stock_out")
     created_at = Column(sq.DateTime, default=datetime.datetime.now())
@@ -30,5 +31,6 @@ class StockOut(Base):
             "id": self.id,
             "quantity": self.quantity,
             "barcode": self.barcode.json(),
+            "cost": self.cost,
             "created_at": self.created_at.isoformat(),
         }

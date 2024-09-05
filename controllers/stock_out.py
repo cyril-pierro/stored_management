@@ -1,12 +1,13 @@
 from typing import Any, Union
 
-from sqlalchemy import func
+from sqlalchemy import func, select, extract, asc, and_
 
 from models.barcode import Barcode
 from models.stock_out import StockOut
 from utils.session import DBSession
 from schemas.stock import StockQuery
 from utils.countFilter import StockFilter
+import datetime
 
 
 def parse_stock_out_data(data: Union[Any, list, None]):
@@ -43,11 +44,17 @@ class StockOutOperator:
         return data
 
     @staticmethod
-    def create_stock_out(barcode_id: int, quantity: int, order_id: int = None):
+    def create_stock_out(
+        barcode_id: int,
+        quantity: int,
+        cost: float,
+        order_id: int = None,
+    ):
         new_stock_out = StockOut(
             barcode_id=barcode_id,
             quantity=quantity,
             order_id=order_id,
+            cost=cost
         )
         return new_stock_out.save()
 
@@ -55,7 +62,8 @@ class StockOutOperator:
     def group_all_stock_ids_data(query_params: StockQuery):
         with DBSession() as db:
             query = (
-                db.query(Barcode, func.sum(StockOut.quantity).label("total_quantity"))
+                db.query(Barcode, func.sum(
+                    StockOut.quantity).label("total_quantity"))
                 .join(StockOut, Barcode.id == StockOut.barcode_id)
                 .group_by(StockOut.barcode_id, Barcode.id)
             )
@@ -75,3 +83,24 @@ class StockOutOperator:
                 .group_by(StockOut.barcode_id, Barcode.id)
             )
         return parse_stock_out_data(query.one_or_none())
+
+    @staticmethod
+    def get_stock_out_data_for_barcode(
+        barcode: Union[int, str],
+        from_datetime: Any,
+        to_datetime: Any
+    ):
+        if not from_datetime:
+            condition = (StockOut.created_at <= to_datetime)
+        else:
+            condition = (StockOut.created_at.between(
+                from_datetime, to_datetime
+            ))
+
+        with DBSession() as db:
+            return db.query(StockOut).filter(
+                and_(
+                    StockOut.barcode.has(Barcode.barcode == barcode),
+                    condition
+                )
+            ).all()

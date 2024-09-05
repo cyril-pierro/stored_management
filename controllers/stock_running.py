@@ -1,4 +1,4 @@
-from typing import TypeVar
+from typing import TypeVar, Any
 
 from models.barcode import Barcode
 from models.stock_running import StockRunning
@@ -7,6 +7,8 @@ from utils.session import DBSession
 from schemas.stock import StockQuery
 from utils.countFilter import StockFilter
 from typing import Union
+from datetime import datetime as dt
+from sqlalchemy import and_
 
 StockOperator = TypeVar("StockOperator")
 
@@ -106,7 +108,7 @@ class StockRunningOperator:
         return stock
     
     @staticmethod
-    def get_stock_in_inventory(barcode_id: Union[int, str]):
+    def get_stock_in_inventory(barcode_id: Union[int, str]) -> StockRunning:
         with DBSession() as db:
             if isinstance(barcode_id, int):
                 barcode_found = db.query(Barcode).filter(Barcode.id == barcode_id).first()
@@ -118,6 +120,25 @@ class StockRunningOperator:
                 db.query(StockRunning)
                 .filter(StockRunning.barcode_id == barcode_found.id)
                 .first()
+            )
+        
+    @staticmethod
+    def get_running_stock_report(
+        barcode_id: Union[int, str],
+        report_on: Any = dt.now()
+    ) -> StockRunning:
+        with DBSession() as db:
+            barcode_found = db.query(Barcode).filter(Barcode.barcode == barcode_id).first()
+            if not barcode_found:
+                raise ValueError("Could not find barcode in inventory")
+            return (
+                db.query(StockRunning)
+                .filter(
+                    and_(
+                        StockRunning.barcode_id == barcode_found.id,
+                        StockRunning.created_at <= report_on
+                    )
+                ).first()
             )
 
     @staticmethod

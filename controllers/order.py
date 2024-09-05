@@ -61,11 +61,10 @@ class OrderOperator:
         )
         created_order = new_order.save()
 
-        # save stock out data
-        SO.create_stock_out(
-            barcode_id=running_stock.barcode_id,
+        StockOperator.update_stock_and_cost(
             quantity=data.quantity,
-            order_id=created_order.id,
+            barcode_id=running_stock.barcode_id,
+            order_id=created_order.id
         )
 
         value = SO.get_group_all_stock_ids_data_by_stock_id(barcode)
@@ -82,9 +81,6 @@ class OrderOperator:
                 recipients=Recipients.get_all_recipients(),
                 barcode=stock_runner.barcode,
             )
-        StockOperator.update_stock_and_cost(
-            quantity=data.quantity, barcode_id=running_stock.barcode_id
-        )
         return created_order
 
     @staticmethod

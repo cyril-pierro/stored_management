@@ -4,6 +4,7 @@ from typing import Any, Union
 from sqlalchemy import and_, func
 
 from controllers.stock_running import StockRunningOperator as SR
+from controllers.stock_out import StockOutOperator as SO
 from error import AppError
 from models.barcode import Barcode
 from models.cost import Costs
@@ -100,7 +101,11 @@ class StockOperator:
         return value
 
     @staticmethod
-    def update_stock_and_cost(quantity: int, barcode_id: int) -> Union[bool, None]:
+    def update_stock_and_cost(
+        quantity: int,
+        barcode_id: int,
+        order_id: int,
+    ) -> Union[bool, None]:
         with DBSession() as db:
             stocks = (
                 db.query(Stock)
@@ -121,6 +126,12 @@ class StockOperator:
                     db.add(stock)
                     db.commit()
                     db.refresh(stock)
+                    SO.create_stock_out(
+                        barcode_id=barcode_id,
+                        quantity=quantity,
+                        order_id=order_id,
+                        cost=stock.costs.cost
+                    )
                 else:
                     old_quantity = stock.quantity
                     quantity = quantity - stock.quantity
@@ -133,6 +144,12 @@ class StockOperator:
                     StockOperator.add_cost_evaluation_data(
                         stock_obj=stock,
                         quantity=old_quantity,
+                    )
+                    SO.create_stock_out(
+                        barcode_id=barcode_id,
+                        quantity=old_quantity,
+                        order_id=order_id,
+                        cost=stock.costs.cost
                     )
         return True
 
@@ -168,6 +185,19 @@ class StockOperator:
 
     @staticmethod
     def get_grouped_stocks_with_stock_barcode(barcode: str):
+        """
+        Retrieve grouped stock information associated with a specific barcode.
+        This function aggregates stock quantities and costs
+        for the given barcode, providing a summary of stock data.
+
+        Args:
+            barcode (str): The barcode for which the grouped
+            stock information is requested.
+
+        Returns:
+            dict or None: A dictionary containing the total quantity of stock
+            and a list of associated costs, or None if no data is found.
+        """
         with DBSession() as db:
             query = (
                 db.query(
@@ -181,6 +211,43 @@ class StockOperator:
                 .group_by(Barcode)
             )
         return parse_stock_data(query.one_or_none())
+
+    @staticmethod
+    def get_stock_report(
+        barcode: str,
+        from_datetime: Any,
+        to_datetime: Any
+    ):
+        """
+        Retrieve a stock report for a specific barcode within a given time
+        frame. This function queries the stock data associated with
+        the provided barcode and groups the results by month,
+        allowing for analysis of stock trends over time.
+
+        Args:
+            barcode (str): The barcode for which the stock report is generated.
+            report_on (Any, optional): The date up to which the report
+            is generated. Defaults to the current date and time.
+
+        Returns:
+            list: A list of stock report data grouped by month for the 
+            specified barcode.
+        """
+        if not from_datetime:
+            condition = (Stock.created_at <= to_datetime)
+        else:
+            condition = (Stock.created_at.between(
+                from_datetime, to_datetime
+            ))
+
+        with DBSession() as db:
+            return db.query(Stock)\
+                .filter(
+                    and_(
+                        Stock.barcode.has(Barcode.barcode == barcode),
+                        condition
+                    )
+            ).all()
 
     @staticmethod
     def get_stock_by(id_or_barcode: Union[str, int]):
@@ -252,19 +319,21 @@ class ScanStock:
         with DBSession() as db:
             found_barcode = (
                 db.query(Barcode).filter(
-                    Barcode.barcode == data.barcode
-                ).first()
+                    Barcode.barcode == data.barcode).first()
             )
             if found_barcode:
                 raise AppError(
                     message="Scan Barcode already exists", status_code=400)
             # get the last barcode added
-            last_barcode = db.query(Barcode).filter(
-                Barcode.code.ilike(f"%SK{data.category.upper()[0]}%")
-            ).order_by(Barcode.id.desc()).first()
+            last_barcode = (
+                db.query(Barcode)
+                .filter(Barcode.code.ilike(f"%SK{data.category.upper()[0]}%"))
+                .order_by(Barcode.id.desc())
+                .first()
+            )
         data.__dict__["code"] = generate_codes(
             previous_code=last_barcode.code if last_barcode else None,
-            category=data.category
+            category=data.category,
         )
         scan_created = Barcode(**data.__dict__)
         return scan_created.save()
@@ -278,7 +347,7 @@ class ScanStock:
                 raise AppError(
                     message="Scan Barcode does not exist", status_code=404)
         return found_barcode
-        
+
     @staticmethod
     def edit_barcode(barcode_id: int, data: UpdateIn) -> Barcode:
         barcode_found = ScanStock.get_barcode(barcode_id)
@@ -287,7 +356,7 @@ class ScanStock:
         barcode_found.specification = data.specification
         barcode_found.erm_code = data.erm_code or barcode_found.erm_code
         return barcode_found.save(merge=True)
-        
+
     @staticmethod
     def delete_barcode(barcode_id: int) -> bool:
         with DBSession() as db:
@@ -296,11 +365,15 @@ class ScanStock:
             if not found_barcode:
                 raise AppError(
                     message="Scan Barcode does not exist", status_code=404)
-            stock_available = db.query(Stock).filter(
-                Stock.barcode_id == found_barcode.id).first()
+            stock_available = (
+                db.query(Stock).filter(
+                    Stock.barcode_id == found_barcode.id).first()
+            )
             if stock_available:
                 raise AppError(
-                    message="Action denied, Scan Barcode is in use as a Stock", status_code=400)
+                    message="Action denied, Scan Barcode is in use as a Stock",
+                    status_code=400,
+                )
             db.delete(found_barcode)
             db.commit()
         return True

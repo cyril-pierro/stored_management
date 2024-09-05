@@ -18,7 +18,7 @@ async def check_if_part_is_available(
 ):
     staff_id = Auth.verify_token(token=access_token.credentials, for_="login")
     if not StaffOperator.has_engineer_permission(staff_id):
-        raise AppError(message=PERMISSION_ERROR, status_code=401)
+        raise AppError(message=PERMISSION_ERROR, status_code=403)
     return OO.check_if_order_is_available(barcode_id)
 
 
@@ -26,7 +26,7 @@ async def check_if_part_is_available(
 async def get_number_of_orders_done(access_token: str = Depends(bearer_schema)):
     staff_id = Auth.verify_token(token=access_token.credentials, for_="login")
     if not StaffOperator.has_engineer_permission(staff_id):
-        raise AppError(message=PERMISSION_ERROR, status_code=401)
+        raise AppError(message=PERMISSION_ERROR, status_code=403)
     return {"number": OO.get_number_of_orders()}
 
 
@@ -38,7 +38,7 @@ async def buy_or_collect_stock_from_store(
 ):
     staff_id = Auth.verify_token(token=access_token.credentials, for_="login")
     if not StaffOperator.has_engineer_permission(staff_id):
-        raise AppError(message=PERMISSION_ERROR, status_code=401)
+        raise AppError(message=PERMISSION_ERROR, status_code=403)
     return OO.create_order_for_stock_with(
         barcode=barcode, data=data, user_id=staff_id
     )
