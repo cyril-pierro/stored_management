@@ -60,7 +60,7 @@ class OrderOperator:
             restrictions=OrderStatus.part_available.name,
         )
         created_order = new_order.save()
-
+        
         StockOperator.update_stock_and_cost(
             quantity=data.quantity,
             barcode_id=running_stock.barcode_id,

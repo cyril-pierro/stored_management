@@ -1,13 +1,12 @@
 from typing import Any, Union
 
-from sqlalchemy import func, select, extract, asc, and_
+from sqlalchemy import func, and_
 
 from models.barcode import Barcode
 from models.stock_out import StockOut
 from utils.session import DBSession
 from schemas.stock import StockQuery
 from utils.countFilter import StockFilter
-import datetime
 
 
 def parse_stock_out_data(data: Union[Any, list, None]):
@@ -21,7 +20,6 @@ def parse_stock_out_data(data: Union[Any, list, None]):
                 "location": i[0].location,
                 "specification": i[0].specification,
                 "code": i[0].code,
-                # "cost": i[0].cost,
                 "quantity": i[1],
             }
             for i in data

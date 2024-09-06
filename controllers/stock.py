@@ -116,6 +116,7 @@ class StockOperator:
             if len(stocks) == 0:
                 return
             for stock in stocks:
+                should_break = False
                 if stock.quantity >= quantity:
                     stock.quantity -= quantity
                     StockOperator.add_cost_evaluation_data(
@@ -133,6 +134,9 @@ class StockOperator:
                         order_id=order_id,
                         cost=stock.costs.cost
                     )
+                    if stock.quantity > quantity:
+                        should_break = True
+                    
                 else:
                     old_quantity = stock.quantity
                     quantity = quantity - stock.quantity
@@ -152,6 +156,8 @@ class StockOperator:
                         order_id=order_id,
                         cost=stock.costs.cost
                     )
+                if should_break:
+                    break
         return True
 
     @staticmethod
