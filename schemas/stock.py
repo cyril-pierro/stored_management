@@ -72,6 +72,7 @@ class StockIn(BaseModel):
 class StockOut(BaseModel):
     id: int
     quantity: int
+    quantity_initiated: int
     sold: bool
     barcode: Barcode
     costs: CostOut
