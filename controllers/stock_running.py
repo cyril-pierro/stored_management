@@ -137,7 +137,7 @@ class StockRunningOperator:
                     and_(
                         StockRunning.barcode.has(
                             Barcode.barcode == barcode_id),
-                        StockRunning.created_at <= report_on,
+                        StockRunning.updated_at <= report_on,
                     )
             ).first()
 

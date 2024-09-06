@@ -127,7 +127,7 @@ class ReportDashboard:
             "available_stock": (
                 {
                     "quantity": running_stock.remaining_quantity,
-                    "created_at": datetime.now().isoformat(),
+                    "created_at": to_datetime.isoformat(),
                 }
                 if running_stock
                 else {}

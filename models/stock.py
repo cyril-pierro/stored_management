@@ -13,6 +13,7 @@ class Stock(Base):
     id = Column(sq.Integer, primary_key=True, unique=True, index=True)
     barcode_id = Column(sq.Integer, ForeignKey("barcode.id"), nullable=False)
     quantity = Column(sq.Integer, default=0)
+    quantity_initiated = Column(sq.Integer, nullable=False, default=0, server_default=0)
     sold = Column(sq.Boolean, default=False)
     cost_id = Column(sq.Integer, ForeignKey("costs.id"), nullable=False)
     created_by = Column(sq.Integer, ForeignKey("staff.id"))

@@ -91,6 +91,7 @@ class StockOperator:
             created_by=staff_id,
             cost_id=cost_created.id,
             quantity=quantity_allocated,
+            quantity_initiated=quantity_allocated,
         )
         value = new_stock.save()
         SR.create_running_stock(
@@ -174,7 +175,7 @@ class StockOperator:
             query = (
                 db.query(
                     Barcode,
-                    func.sum(Stock.quantity).label("total_quantity"),
+                    func.sum(Stock.quantity_initiated).label("total_quantity"),
                     func.array_agg(Costs.cost).label("cost_list"),
                 )
                 .join(Stock, Barcode.id == Stock.barcode_id)
@@ -279,6 +280,7 @@ class StockOperator:
         stock_found.barcode_id = data.barcode_id
         stock_found.updated_by = staff_id
         stock_found.quantity = quantity
+        stock_found.quantity_initiated = quantity
         stock_found.updated_at = datetime.datetime.now()
         cost_id = StockOperator.get_or_generate_cost(cost).id
         stock_found.cost_id = cost_id
