@@ -136,7 +136,7 @@ class ReportDashboard:
                 [
                     {
                         "created_at": stock.created_at.isoformat(),
-                        "quantity": stock.quantity,
+                        "quantity": stock.quantity_initiated,
                         "cost": stock.cost,
                     }
                     for stock in stock_out
