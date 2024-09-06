@@ -111,6 +111,7 @@ class StockOperator:
             stocks = (
                 db.query(Stock)
                 .filter(and_(Stock.barcode_id == barcode_id, Stock.sold.is_(False)))
+                .order_by(Stock.id.asc())
                 .all()
             )
             if len(stocks) == 0:
@@ -253,7 +254,7 @@ class StockOperator:
                         Stock.barcode.has(Barcode.barcode == barcode),
                         condition
                     )
-            ).all()
+            ).order_by(Stock.id.asc()).all()
 
     @staticmethod
     def get_stock_by(id_or_barcode: Union[str, int]):
