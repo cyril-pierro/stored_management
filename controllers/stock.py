@@ -134,8 +134,7 @@ class StockOperator:
                         order_id=order_id,
                         cost=stock.costs.cost
                     )
-                    if stock.quantity > quantity:
-                        should_break = True
+                    should_break = True
                     
                 else:
                     old_quantity = stock.quantity
