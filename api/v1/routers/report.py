@@ -115,9 +115,9 @@ async def get_analysis_report(
 )
 async def get_collection_report(
     year: int = Query(None),
-    # access_token: str = Depends(bearer_schema)
+    access_token: str = Depends(bearer_schema)
 ):
-    # staff_id = Auth.verify_token(token=access_token.credentials, for_="login")
-    # if not StaffOperator.has_stock_controller_permission(staff_id=staff_id):
-    #     raise AppError(message=PERMISSION_ERROR, status_code=401)
+    staff_id = Auth.verify_token(token=access_token.credentials, for_="login")
+    if not StaffOperator.has_stock_controller_permission(staff_id=staff_id):
+        raise AppError(message=PERMISSION_ERROR, status_code=401)
     return ReportDashboard.monthly_collection_report(year=year)
