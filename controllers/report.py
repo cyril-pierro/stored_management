@@ -212,6 +212,51 @@ class ReportDashboard:
         }
 
     @staticmethod
+    def get_analysis_report_by_department(
+        department_id: int,
+        from_: str,
+        to_: str
+    ):
+        filters = []
+        if from_:
+            from_datetime = datetime.strptime(from_, "%Y-%m-%d")
+            filters.append(
+                Orders.created_at
+                >= from_datetime + timedelta(hours=0, minutes=0, seconds=0)
+            )
+        if to_:
+            to_datetime = datetime.strptime(to_, "%Y-%m-%d")
+            filters.append(
+                Orders.created_at
+                <= to_datetime + timedelta(hours=23, minutes=59, seconds=59)
+            )
+        with DBSession() as db:
+            data = (
+                db.query(
+                    Department.name, Orders.quantity, Orders.total_cost, Orders.created_at
+                )
+                .outerjoin(
+                    Orders, Orders.staff.has(
+                        Staff.department_id == Department.id
+                    )
+                )
+                .filter(Department.id == department_id, and_(*filters))
+                .all()
+            )
+            if not data:
+                return []
+
+            return [
+                {
+                    "name": name,
+                    "created_at": created_at,
+                    "quantity": quantity or 0,
+                    "cost": total_cost or 0
+                }
+                for name, quantity, total_cost, created_at in data
+            ]
+
+    @staticmethod
     def monthly_collection_report(year: int):
         if not year:
             year = datetime.now().year

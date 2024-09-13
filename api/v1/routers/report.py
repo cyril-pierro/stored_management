@@ -109,6 +109,20 @@ async def get_analysis_report(
     )
 
 
+@op_router.get("/analysis/department/{department_id}")
+async def get_analysis_report_by_department(
+    department_id: int,
+    from_: Optional[str] = Query(None),
+    to_: Optional[str] = Query(None),
+    # access_token: str = Depends(bearer_schema)
+):
+    return ReportDashboard.get_analysis_report_by_department(
+        department_id=department_id,
+        from_=from_,
+        to_=to_
+    )
+
+
 @op_router.get(
     "/collection/monthly",
     response_model=list[MonthlyCollectionOut]
