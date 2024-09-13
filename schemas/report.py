@@ -10,3 +10,8 @@ class ErmReportOut(BaseModel):
     part_description: str
     quantity: int
     erm_code: str
+
+
+class ErmQuantityOut(BaseModel):
+    erm_code: str
+    quantity: int

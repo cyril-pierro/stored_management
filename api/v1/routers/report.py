@@ -5,7 +5,7 @@ from controllers.operations import StaffOperator
 from error import AppError
 from utils.common import bearer_schema
 from controllers.report import ReportDashboard
-from schemas.report import ErmReportOut
+from schemas.report import ErmReportOut, ErmQuantityOut
 from datetime import datetime
 from typing import Optional
 
@@ -55,6 +55,20 @@ def get_erm_report(
     if not StaffOperator.has_stock_controller_permission(staff_id=staff_id):
         raise AppError(message=PERMISSION_ERROR, status_code=403)
     return ReportDashboard.get_erm_report_data()
+
+
+@op_router.get(
+        "/reports/erm_code",
+        response_model=list[ErmQuantityOut]
+    )
+async def get_erm_code_quantity(
+    access_token: str = Depends(bearer_schema)
+):
+    staff_id = Auth.verify_token(token=access_token.credentials, for_="login")
+    if not StaffOperator.has_stock_controller_permission(staff_id=staff_id):
+        raise AppError(message=PERMISSION_ERROR, status_code=403)
+    return ReportDashboard.get_quantity_for_erm_codes()
+
 
 
 @op_router.get("/analysis/{barcode}")

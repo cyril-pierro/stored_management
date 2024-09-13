@@ -31,7 +31,8 @@ class ReportDashboard:
             subq_adjustments = (
                 db.query(
                     StockAdjustment.department_id,
-                    func.sum(StockAdjustment.quantity).label("adjustment_amount"),
+                    func.sum(StockAdjustment.quantity).label(
+                        "adjustment_amount"),
                 )
                 .group_by(StockAdjustment.department_id)
                 .subquery()
@@ -39,7 +40,8 @@ class ReportDashboard:
 
             subq_orders = (
                 db.query(
-                    Staff.department_id, func.sum(Orders.quantity).label("sale_amount")
+                    Staff.department_id, func.sum(
+                        Orders.quantity).label("sale_amount")
                 )
                 .join(Orders, Staff.id == Orders.staff_id)
                 .group_by(Staff.department_id)
@@ -65,15 +67,38 @@ class ReportDashboard:
         with DBSession() as db:
             data = (
                 db.query(
-                    Department.name, func.count(Orders.id), func.sum(Orders.quantity)
+                    Department.name, func.count(
+                        Orders.id), func.sum(Orders.quantity)
                 )
                 .outerjoin(
-                    Orders, Orders.staff.has(Staff.department_id == Department.id)
+                    Orders, Orders.staff.has(
+                        Staff.department_id == Department.id)
                 )
                 .group_by(Department.name)
                 .all()
             )
         return ReportParser.convert_number_and_quantity_orders_data(data)
+
+    @staticmethod
+    def get_quantity_for_erm_codes():
+        with DBSession() as db:
+            query = (
+                db.query(Barcode.erm_code, func.sum(Orders.quantity))
+                .join(Barcode, Orders.barcode_id == Barcode.id)
+                .group_by(Barcode.erm_code)
+                .filter(Barcode.erm_code.is_not(None))
+                .all()
+
+            )
+            if len(query) == 0:
+                return []
+            return [
+                {
+                    "erm_code": erm_code,
+                    "quantity": quantity
+                }
+                for erm_code, quantity in query
+            ]
 
     @staticmethod
     def get_erm_report_data():
@@ -109,7 +134,7 @@ class ReportDashboard:
         barcode_found = StockOperator.get_barcode(barcode)
         if not barcode_found:
             raise ValueError("No barcode information found")
-        
+
         to_datetime = to_datetime + timedelta(hours=23, minutes=59, seconds=59)
         running_stock = StockRunningOperator.get_running_stock_report(
             barcode, to_datetime
@@ -118,7 +143,8 @@ class ReportDashboard:
             barcode, from_datetime, to_datetime
         )
 
-        stocks = StockOperator.get_stock_report(barcode, from_datetime, to_datetime)
+        stocks = StockOperator.get_stock_report(
+            barcode, from_datetime, to_datetime)
         return {
             "description": {
                 "barcode": barcode,
