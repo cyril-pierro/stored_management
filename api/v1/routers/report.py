@@ -49,12 +49,14 @@ async def get_stock_reports(access_token: str = Depends(bearer_schema)):
         response_model=list[ErmReportOut]
     )
 def get_erm_report(
+    from_: Optional[str] = Query(None),
+    to_: Optional[str] = Query(None),
     access_token: str = Depends(bearer_schema)
 ):
     staff_id = Auth.verify_token(token=access_token.credentials, for_="login")
     if not StaffOperator.has_stock_controller_permission(staff_id=staff_id):
-        raise AppError(message=PERMISSION_ERROR, status_code=403)
-    return ReportDashboard.get_erm_report_data()
+        raise AppError(message=PERMISSION_ERROR, status_code=401)
+    return ReportDashboard.get_erm_report_data(from_, to_)
 
 
 @op_router.get(
@@ -66,7 +68,7 @@ async def get_erm_code_quantity(
 ):
     staff_id = Auth.verify_token(token=access_token.credentials, for_="login")
     if not StaffOperator.has_stock_controller_permission(staff_id=staff_id):
-        raise AppError(message=PERMISSION_ERROR, status_code=403)
+        raise AppError(message=PERMISSION_ERROR, status_code=401)
     return ReportDashboard.get_quantity_for_erm_codes()
 
 
@@ -91,7 +93,7 @@ async def get_analysis_report(
     """
     staff_id = Auth.verify_token(token=access_token.credentials, for_="login")
     if not StaffOperator.has_stock_controller_permission(staff_id=staff_id):
-        raise AppError(message=PERMISSION_ERROR, status_code=403)
+        raise AppError(message=PERMISSION_ERROR, status_code=401)
     from_datetime = from_
     if from_:
         from_datetime = datetime.strptime(from_, '%Y-%m-%d')

@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Query
 
 from controllers.auth import Auth
 from controllers.operations import StaffOperator
@@ -25,6 +25,8 @@ from schemas.stock import (
     UpdateIn
 )
 from utils.common import bearer_schema
+from typing import Optional
+
 
 PERMISSION_ERROR = "You do not have permission to perform this operation"
 op_router = APIRouter()
@@ -255,11 +257,15 @@ async def get_running_stocks(
 
 
 @op_router.get("/orders", response_model=list[OrderOut])
-async def get_all_orders(access_token: str = Depends(bearer_schema)):
+async def get_all_orders(
+    from_: Optional[str] = Query(None),
+    to_: Optional[str] = Query(None),
+    access_token: str = Depends(bearer_schema)
+):
     staff_id = Auth.verify_token(token=access_token.credentials, for_="login")
     if not StaffOperator.has_stock_controller_permission(staff_id=staff_id):
         raise AppError(message=PERMISSION_ERROR, status_code=401)
-    return OrderOperator.get_all_orders()
+    return OrderOperator.get_all_orders(from_=from_, to_=to_)
 
 
 @op_router.get("/cost-evaluation")

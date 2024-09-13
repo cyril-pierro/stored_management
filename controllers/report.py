@@ -7,7 +7,7 @@ from controllers.stock_running import StockRunningOperator
 from controllers.stock_out import StockOutOperator
 from controllers.stock import StockOperator
 from utils.session import DBSession
-from sqlalchemy import func
+from sqlalchemy import func, and_
 from parser.report import ReportParser
 from typing import Any
 from datetime import datetime, timedelta
@@ -31,8 +31,7 @@ class ReportDashboard:
             subq_adjustments = (
                 db.query(
                     StockAdjustment.department_id,
-                    func.sum(StockAdjustment.quantity).label(
-                        "adjustment_amount"),
+                    func.sum(StockAdjustment.quantity).label("adjustment_amount"),
                 )
                 .group_by(StockAdjustment.department_id)
                 .subquery()
@@ -40,8 +39,7 @@ class ReportDashboard:
 
             subq_orders = (
                 db.query(
-                    Staff.department_id, func.sum(
-                        Orders.quantity).label("sale_amount")
+                    Staff.department_id, func.sum(Orders.quantity).label("sale_amount")
                 )
                 .join(Orders, Staff.id == Orders.staff_id)
                 .group_by(Staff.department_id)
@@ -67,12 +65,10 @@ class ReportDashboard:
         with DBSession() as db:
             data = (
                 db.query(
-                    Department.name, func.count(
-                        Orders.id), func.sum(Orders.quantity)
+                    Department.name, func.count(Orders.id), func.sum(Orders.quantity)
                 )
                 .outerjoin(
-                    Orders, Orders.staff.has(
-                        Staff.department_id == Department.id)
+                    Orders, Orders.staff.has(Staff.department_id == Department.id)
                 )
                 .group_by(Department.name)
                 .all()
@@ -88,27 +84,48 @@ class ReportDashboard:
                 .group_by(Barcode.erm_code)
                 .filter(Barcode.erm_code.is_not(None))
                 .all()
-
             )
             if len(query) == 0:
                 return []
             return [
-                {
-                    "erm_code": erm_code,
-                    "quantity": quantity
-                }
+                {"erm_code": erm_code, "quantity": quantity}
                 for erm_code, quantity in query
             ]
 
     @staticmethod
-    def get_erm_report_data():
-        with DBSession() as db:
-            orders = (
-                db.query(Orders)
-                .filter(Orders.barcode.has(Barcode.erm_code.is_not(None)))
-                .order_by(Orders.id.desc())
-                .all()
+    def get_erm_report_data(from_: str = None, to_: str = None):
+        filters = []
+        if from_:
+            from_datetime = datetime.strptime(from_, "%Y-%m-%d")
+            filters.append(
+                Orders.created_at
+                >= from_datetime + timedelta(hours=0, minutes=0, seconds=0)
             )
+        if to_:
+            to_datetime = datetime.strptime(to_, "%Y-%m-%d")
+            filters.append(
+                Orders.created_at
+                <= to_datetime + timedelta(hours=23, minutes=59, seconds=59)
+            )
+
+        with DBSession() as db:
+            if not filters:
+                orders = (
+                    db.query(Orders)
+                    .filter(Orders.barcode.has(Barcode.erm_code.is_not(None)))
+                    .order_by(Orders.id.desc())
+                    .all()
+                )
+            else:
+                orders = (
+                    db.query(Orders)
+                    .filter(
+                        Orders.barcode.has(Barcode.erm_code.is_not(None)), and_(*filters)
+                    )
+                    .order_by(Orders.id.desc())
+                    .all()
+                )
+
         if len(orders) == 0:
             return []
         return [
@@ -135,7 +152,9 @@ class ReportDashboard:
         if not barcode_found:
             raise ValueError("No barcode information found")
 
-        to_datetime = to_datetime + timedelta(hours=23, minutes=59, seconds=59)
+        to_datetime = (to_datetime or datetime.now().date()) + timedelta(hours=23, minutes=59, seconds=59)
+        if from_datetime:
+            from_datetime = from_datetime + timedelta(hours=0, minutes=0, seconds=0)
         running_stock = StockRunningOperator.get_running_stock_report(
             barcode, to_datetime
         )
@@ -143,8 +162,7 @@ class ReportDashboard:
             barcode, from_datetime, to_datetime
         )
 
-        stocks = StockOperator.get_stock_report(
-            barcode, from_datetime, to_datetime)
+        stocks = StockOperator.get_stock_report(barcode, from_datetime, to_datetime)
         return {
             "description": {
                 "barcode": barcode,

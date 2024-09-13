@@ -9,6 +9,8 @@ from utils.enum import OrderStatus
 from utils.enum import RunningStockStatus as RS
 from utils.session import DBSession
 from cron.task import send_email
+from datetime import datetime, timedelta
+from sqlalchemy import and_
 
 
 class OrderOperator:
@@ -29,10 +31,21 @@ class OrderOperator:
         }
 
     @staticmethod
-    def get_all_orders():
+    def get_all_orders(from_: str = None, to_: str = None):
+        filters = []
+        if from_:
+            from_datetime = datetime.strptime(from_, '%Y-%m-%d')
+            filters.append(Orders.created_at >= from_datetime +
+                           timedelta(hours=0, minutes=0, seconds=0))
+        if to_:
+            to_datetime = datetime.strptime(to_, '%Y-%m-%d')
+            filters.append(Orders.created_at <= to_datetime +
+                           timedelta(hours=23, minutes=59, seconds=59))
+
         with DBSession() as db:
-            data = db.query(Orders).order_by(Orders.id.desc()).all()
-        return data
+            if not filters:
+                return db.query(Orders).order_by(Orders.id.desc()).all()
+            return db.query(Orders).filter(and_(*filters)).order_by(Orders.id.desc()).all()
 
     @staticmethod
     def get_number_of_orders():
@@ -60,7 +73,7 @@ class OrderOperator:
             restrictions=OrderStatus.part_available.name,
         )
         created_order = new_order.save()
-        
+
         StockOperator.update_stock_and_cost(
             quantity=data.quantity,
             barcode_id=running_stock.barcode_id,
