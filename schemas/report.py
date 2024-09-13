@@ -15,3 +15,9 @@ class ErmReportOut(BaseModel):
 class ErmQuantityOut(BaseModel):
     erm_code: str
     quantity: int
+
+
+class MonthlyCollectionOut(BaseModel):
+    date: int
+    num_of_orders: int
+    quantity: int

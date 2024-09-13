@@ -18,6 +18,7 @@ class Orders(Base):
     part_name = Column(sq.String, nullable=True)
     job_number = Column(sq.String, nullable=False)
     quantity = Column(sq.Integer)
+    total_cost = Column(sq.Integer)
     available_quantity = Column(sq.Integer, default=0)
     restrictions = Column(
         sq.Enum(OrderStatus), nullable=False, default=OrderStatus.part_available.name
@@ -29,8 +30,10 @@ class Orders(Base):
     )
     created_at = Column(sq.DateTime, default=datetime.datetime.now())
 
-    def save(self) -> "Orders":
+    def save(self, merge: bool = False) -> "Orders":
         with DBSession() as db:
+            if merge:
+                self = db.merge(self)
             db.add(self)
             db.commit()
             db.refresh(self)

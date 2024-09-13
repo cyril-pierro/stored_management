@@ -106,7 +106,8 @@ class StockOperator:
         quantity: int,
         barcode_id: int,
         order_id: int,
-    ) -> Union[bool, None]:
+    ) -> Union[float, None]:
+        total_cost = 0
         with DBSession() as db:
             stocks = (
                 db.query(Stock)
@@ -156,9 +157,10 @@ class StockOperator:
                         order_id=order_id,
                         cost=stock.costs.cost
                     )
+                total_cost += stock.costs.cost
                 if should_break:
                     break
-        return True
+        return total_cost
 
     @staticmethod
     def add_cost_evaluation_data(stock_obj: Stock, quantity: int):

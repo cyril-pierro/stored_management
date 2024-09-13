@@ -7,7 +7,7 @@ from controllers.stock_running import StockRunningOperator
 from controllers.stock_out import StockOutOperator
 from controllers.stock import StockOperator
 from utils.session import DBSession
-from sqlalchemy import func, and_
+from sqlalchemy import func, and_, select, extract
 from parser.report import ReportParser
 from typing import Any
 from datetime import datetime, timedelta
@@ -31,7 +31,8 @@ class ReportDashboard:
             subq_adjustments = (
                 db.query(
                     StockAdjustment.department_id,
-                    func.sum(StockAdjustment.quantity).label("adjustment_amount"),
+                    func.sum(StockAdjustment.quantity).label(
+                        "adjustment_amount"),
                 )
                 .group_by(StockAdjustment.department_id)
                 .subquery()
@@ -39,7 +40,8 @@ class ReportDashboard:
 
             subq_orders = (
                 db.query(
-                    Staff.department_id, func.sum(Orders.quantity).label("sale_amount")
+                    Staff.department_id, func.sum(
+                        Orders.quantity).label("sale_amount")
                 )
                 .join(Orders, Staff.id == Orders.staff_id)
                 .group_by(Staff.department_id)
@@ -65,10 +67,13 @@ class ReportDashboard:
         with DBSession() as db:
             data = (
                 db.query(
-                    Department.name, func.count(Orders.id), func.sum(Orders.quantity)
+                    Department.name, func.count(
+                        Orders.id), func.sum(Orders.quantity),
+                    func.sum(Orders.total_cost)
                 )
                 .outerjoin(
-                    Orders, Orders.staff.has(Staff.department_id == Department.id)
+                    Orders, Orders.staff.has(
+                        Staff.department_id == Department.id)
                 )
                 .group_by(Department.name)
                 .all()
@@ -120,7 +125,8 @@ class ReportDashboard:
                 orders = (
                     db.query(Orders)
                     .filter(
-                        Orders.barcode.has(Barcode.erm_code.is_not(None)), and_(*filters)
+                        Orders.barcode.has(
+                            Barcode.erm_code.is_not(None)), and_(*filters)
                     )
                     .order_by(Orders.id.desc())
                     .all()
@@ -152,9 +158,11 @@ class ReportDashboard:
         if not barcode_found:
             raise ValueError("No barcode information found")
 
-        to_datetime = (to_datetime or datetime.now().date()) + timedelta(hours=23, minutes=59, seconds=59)
+        to_datetime = (to_datetime or datetime.now().date()) + \
+            timedelta(hours=23, minutes=59, seconds=59)
         if from_datetime:
-            from_datetime = from_datetime + timedelta(hours=0, minutes=0, seconds=0)
+            from_datetime = from_datetime + \
+                timedelta(hours=0, minutes=0, seconds=0)
         running_stock = StockRunningOperator.get_running_stock_report(
             barcode, to_datetime
         )
@@ -162,7 +170,8 @@ class ReportDashboard:
             barcode, from_datetime, to_datetime
         )
 
-        stocks = StockOperator.get_stock_report(barcode, from_datetime, to_datetime)
+        stocks = StockOperator.get_stock_report(
+            barcode, from_datetime, to_datetime)
         return {
             "description": {
                 "barcode": barcode,
@@ -201,3 +210,32 @@ class ReportDashboard:
                 else []
             ),
         }
+
+    @staticmethod
+    def monthly_collection_report(year: int):
+        if not year:
+            year = datetime.now().year
+        with DBSession() as db:
+            stmt = (
+                select(
+                    func.date_trunc('month', Orders.created_at).label('month'),
+                    func.count(Orders.id).label('total_orders'),
+                    func.sum(Orders.quantity).label('total_quantity'),
+                )
+                .where(
+                    and_(
+                        Orders.barcode.has(Barcode.erm_code.is_not(None))),
+                    extract('year', Orders.created_at) == year
+                )
+                .group_by('month')
+            )
+
+        results = db.execute(stmt).all()
+        return [
+            {
+                "date": date_time.month,
+                "num_of_orders": num_of_orders,
+                "quantity": quantity
+            }
+            for date_time, num_of_orders, quantity in results
+        ]

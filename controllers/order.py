@@ -74,7 +74,7 @@ class OrderOperator:
         )
         created_order = new_order.save()
 
-        StockOperator.update_stock_and_cost(
+        total_cost = StockOperator.update_stock_and_cost(
             quantity=data.quantity,
             barcode_id=running_stock.barcode_id,
             order_id=created_order.id
@@ -94,6 +94,8 @@ class OrderOperator:
                 recipients=Recipients.get_all_recipients(),
                 barcode=stock_runner.barcode,
             )
+        created_order.total_cost = total_cost
+        created_order.save(merge=True)
         return created_order
 
     @staticmethod

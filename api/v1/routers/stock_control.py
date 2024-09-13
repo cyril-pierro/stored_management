@@ -43,24 +43,56 @@ async def get_available_barcodes(access_token: str = Depends(bearer_schema)):
 
 
 @op_router.post("/barcode", response_model=Barcode)
-async def add_scan_stock(data: BarcodeIn):
-    return ScanStock.add_barcode(data)
+async def add_scan_stock(
+    data: BarcodeIn,
+    access_token: str = Depends(bearer_schema)
+):
+    staff_id = Auth.verify_token(token=access_token.credentials, for_="login")
+    if StaffOperator.has_stock_controller_permission(
+        staff_id=staff_id
+    ):
+        return ScanStock.add_barcode(data)
+    raise AppError(message=PERMISSION_ERROR, status_code=401)
 
 
 @op_router.get("/barcode/{barcode_id}", response_model=Barcode)
-async def get_scan_stock(barcode_id: int):
-    return ScanStock.get_barcode(barcode_id)
+async def get_scan_stock(
+    barcode_id: int,
+    access_token: str = Depends(bearer_schema)
+):
+    staff_id = Auth.verify_token(token=access_token.credentials, for_="login")
+    if StaffOperator.has_stock_controller_permission(
+        staff_id=staff_id
+    ):
+        return ScanStock.get_barcode(barcode_id)
+    raise AppError(message=PERMISSION_ERROR, status_code=401)
 
 
 @op_router.delete("/barcode/{barcode_id}", response_model=SuccessOut)
-async def delete_scan_stock(barcode_id: int):
-    ScanStock.delete_barcode(barcode_id)
-    return {"message": "Scan code deleted successfully"}
+async def delete_scan_stock(
+    barcode_id: int,
+    access_token: str = Depends(bearer_schema)
+):
+    staff_id = Auth.verify_token(token=access_token.credentials, for_="login")
+    if StaffOperator.has_stock_controller_permission(
+        staff_id=staff_id
+    ):
+        ScanStock.delete_barcode(barcode_id)
+        return {"message": "Scan code deleted successfully"}
+    raise AppError(message=PERMISSION_ERROR, status_code=401)
 
 
 @op_router.put("/barcode/{barcode_id}", response_model=Barcode)
-async def edit_scan_stock(barcode_id: int, data: UpdateIn):
-    return ScanStock.edit_barcode(barcode_id, data)
+async def edit_scan_stock(
+    barcode_id: int, data: UpdateIn,
+    access_token: str = Depends(bearer_schema)
+):
+    staff_id = Auth.verify_token(token=access_token.credentials, for_="login")
+    if StaffOperator.has_stock_controller_permission(
+        staff_id=staff_id
+    ):
+        return ScanStock.edit_barcode(barcode_id, data)
+    raise AppError(message=PERMISSION_ERROR, status_code=401)
 
 
 @op_router.get("/stock/{id}", response_model=StockOut)

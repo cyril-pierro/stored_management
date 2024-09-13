@@ -5,7 +5,10 @@ from controllers.operations import StaffOperator
 from error import AppError
 from utils.common import bearer_schema
 from controllers.report import ReportDashboard
-from schemas.report import ErmReportOut, ErmQuantityOut
+from schemas.report import (
+    ErmReportOut, ErmQuantityOut,
+    MonthlyCollectionOut
+)
 from datetime import datetime
 from typing import Optional
 
@@ -15,7 +18,9 @@ op_router = APIRouter()
 
 
 @op_router.get("/reports")
-async def get_stock_reports(access_token: str = Depends(bearer_schema)):
+async def get_stock_reports(
+    access_token: str = Depends(bearer_schema)
+):
     """
     Fetch stock reports for various departments. This function retrieves data
     related to stock management, including the number of engineers,
@@ -45,10 +50,10 @@ async def get_stock_reports(access_token: str = Depends(bearer_schema)):
 
 
 @op_router.get(
-        "/erm",
-        response_model=list[ErmReportOut]
-    )
-def get_erm_report(
+    "/erm",
+    response_model=list[ErmReportOut]
+)
+async def get_erm_report(
     from_: Optional[str] = Query(None),
     to_: Optional[str] = Query(None),
     access_token: str = Depends(bearer_schema)
@@ -60,9 +65,9 @@ def get_erm_report(
 
 
 @op_router.get(
-        "/reports/erm_code",
-        response_model=list[ErmQuantityOut]
-    )
+    "/reports/erm_code",
+    response_model=list[ErmQuantityOut]
+)
 async def get_erm_code_quantity(
     access_token: str = Depends(bearer_schema)
 ):
@@ -70,7 +75,6 @@ async def get_erm_code_quantity(
     if not StaffOperator.has_stock_controller_permission(staff_id=staff_id):
         raise AppError(message=PERMISSION_ERROR, status_code=401)
     return ReportDashboard.get_quantity_for_erm_codes()
-
 
 
 @op_router.get("/analysis/{barcode}")
@@ -103,3 +107,17 @@ async def get_analysis_report(
         from_datetime,
         to_datetime
     )
+
+
+@op_router.get(
+    "/collection/monthly",
+    response_model=list[MonthlyCollectionOut]
+)
+async def get_collection_report(
+    year: int = Query(None),
+    # access_token: str = Depends(bearer_schema)
+):
+    # staff_id = Auth.verify_token(token=access_token.credentials, for_="login")
+    # if not StaffOperator.has_stock_controller_permission(staff_id=staff_id):
+    #     raise AppError(message=PERMISSION_ERROR, status_code=401)
+    return ReportDashboard.monthly_collection_report(year=year)
