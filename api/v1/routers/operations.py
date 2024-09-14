@@ -4,6 +4,7 @@ from controllers.auth import Auth
 from controllers.operations import DepartmentOperator, JobOperator, StaffOperator
 from error import AppError
 from models.email import Recipients
+from models.category import Category
 from schemas.operations import (
     DepartmentIn,
     DepartmentOut,
@@ -13,6 +14,8 @@ from schemas.operations import (
     JobOut,
     RolesOut,
     SuccessOut,
+    CategoryIn,
+    CategoryOut
 )
 from schemas.staff import StaffIn, StaffOut, UpdateStaffIn
 from utils.common import bearer_schema
@@ -87,7 +90,8 @@ async def remove_staff_member(id: int, access_token: str = Depends(bearer_schema
 
 @op_router.put("/staff/{id}", response_model=StaffOut)
 async def update_staff_member(
-    id: int, data: UpdateStaffIn, access_token: str = Depends(bearer_schema)
+    id: int, data: UpdateStaffIn,
+    access_token: str = Depends(bearer_schema)
 ):
     staff_id = Auth.verify_token(token=access_token.credentials, for_="login")
     if not StaffOperator.has_stock_controller_permission(staff_id=staff_id):
@@ -96,6 +100,66 @@ async def update_staff_member(
             status_code=401,
         )
     return StaffOperator.update_staff_by_id(id, data)
+
+
+@op_router.get("/categories", response_model=list[CategoryOut])
+async def get_all_categories(
+    access_token: str = Depends(bearer_schema)
+):
+    staff_id = Auth.verify_token(token=access_token.credentials, for_="login")
+    if not StaffOperator.has_stock_controller_permission(staff_id=staff_id):
+        raise AppError(
+            message=PERMISSION_DENIED,
+            status_code=401,
+        )
+    return Category.get_all()
+
+
+@op_router.post("/categories")
+async def create_category(
+    data: CategoryIn,
+    access_token: str = Depends(bearer_schema)
+):
+    staff_id = Auth.verify_token(token=access_token.credentials, for_="login")
+    if not StaffOperator.has_stock_controller_permission(staff_id=staff_id):
+        raise AppError(
+            message=PERMISSION_DENIED,
+            status_code=401,
+        )
+    return Category.add(data)
+
+
+@op_router.put("/categories/{category_id}", response_model=CategoryOut)
+async def update_category_by_id(
+    category_id: int, data: CategoryIn,
+    access_token: str = Depends(bearer_schema)
+):
+    staff_id = Auth.verify_token(token=access_token.credentials, for_="login")
+    if not StaffOperator.has_stock_controller_permission(staff_id=staff_id):
+        raise AppError(
+            message=PERMISSION_DENIED,
+            status_code=401,
+        )
+    return Category.update(category_id, data)
+
+
+@op_router.delete("/categories/{category_id}", response_model=SuccessOut)
+async def delete_category_by_id(
+    category_id: int,
+    access_token: str = Depends(bearer_schema)
+):
+    staff_id = Auth.verify_token(token=access_token.credentials, for_="login")
+    if not StaffOperator.has_stock_controller_permission(staff_id=staff_id):
+        raise AppError(
+            message=PERMISSION_DENIED,
+            status_code=401,
+        )
+    category_found = Category.get(category_id)
+    if not category_found:
+        raise AppError(message="Category not found", status_code=404)
+    status = category_found.remove(merge=True)
+    if status:
+        return {"message": "Category deleted successfully"}
 
 
 @op_router.get("/job-title", response_model=list[JobOut])

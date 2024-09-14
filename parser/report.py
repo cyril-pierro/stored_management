@@ -35,7 +35,7 @@ class ReportParser:
                 "department": value[0],
                 "number_of_orders":  value[1] or 0,
                 "quantity_of_orders": value[2] or 0,
-                "total_cost": max(value[3] or 0, 0) * max(value[2] or 0, 0),
+                "total_cost": value[3] or 0,
             }
             for value in data
         ]

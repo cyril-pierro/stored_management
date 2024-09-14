@@ -9,6 +9,7 @@ from error import AppError
 from models.barcode import Barcode
 from models.cost import Costs
 from models.stock import Stock
+from models.category import Category
 from models.evaluation import CostEvaluation
 from schemas.stock import StockIn, BarcodeIn, UpdateIn
 from utils.generate import generate_codes
@@ -341,10 +342,16 @@ class ScanStock:
                 .order_by(Barcode.id.desc())
                 .first()
             )
+        category_found = Category.get(data.category)
+        if not category_found:
+            raise ValueError("Please enter a category before you add a barcode")
+        
         data.__dict__["code"] = generate_codes(
             previous_code=last_barcode.code if last_barcode else None,
             category=data.category,
         )
+        data.__dict__["category_id"] = category_found.id
+        data.__dict__.pop("category")
         scan_created = Barcode(**data.__dict__)
         return scan_created.save()
 

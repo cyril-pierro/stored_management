@@ -145,6 +145,8 @@ class StaffOperator:
             raise ValueError("Staff not found")
         staff.name = data.name
         staff.role_id = data.role_id
+        staff.department_id = data.department_id
+        staff.job_id = data.job_id
         return staff.save(merge=True)
 
     @staticmethod

@@ -1,10 +1,21 @@
 from pydantic import BaseModel, EmailStr
 
 from utils.enum import RolesStatus
+from datetime import datetime
 
 
 class SuccessOut(BaseModel):
     message: str
+
+
+class CategoryIn(BaseModel):
+    name: str
+
+
+class CategoryOut(BaseModel):
+    id: int
+    name: str
+    created_at: datetime
 
 
 class JobIn(BaseModel):

@@ -69,7 +69,7 @@ class ReportDashboard:
                 db.query(
                     Department.name, func.count(
                         Orders.id), func.sum(Orders.quantity),
-                    func.sum(Orders.total_cost)
+                    func.sum(Orders.quantity * Orders.total_cost)
                 )
                 .outerjoin(
                     Orders, Orders.staff.has(
@@ -233,7 +233,7 @@ class ReportDashboard:
         with DBSession() as db:
             data = (
                 db.query(
-                    Department.name, Orders.quantity, Orders.total_cost, Orders.created_at
+                    Department.name, Orders
                 )
                 .outerjoin(
                     Orders, Orders.staff.has(
@@ -245,15 +245,21 @@ class ReportDashboard:
             )
             if not data:
                 return []
-
             return [
                 {
                     "name": name,
-                    "created_at": created_at,
-                    "quantity": quantity or 0,
-                    "cost": total_cost or 0
+                    "values": [
+                        {
+                            "created_at": stock_out.created_at.isoformat(),
+                            "quantity": stock_out.quantity,
+                            "cost": stock_out.cost,
+                            "barcode": stock_out.barcode.barcode,
+
+                        }
+                        for stock_out in orders.stock_out
+                    ]
                 }
-                for name, quantity, total_cost, created_at in data
+                for name, orders in data
             ]
 
     @staticmethod

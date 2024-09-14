@@ -39,6 +39,8 @@ class StaffOut(BaseModel):
 class UpdateStaffIn(BaseModel):
     name: str
     role_id: int
+    department_id: int
+    job_id: int
 
 
 class ChangePasswordIn(BaseModel):

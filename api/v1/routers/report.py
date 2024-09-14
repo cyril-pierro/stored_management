@@ -114,8 +114,11 @@ async def get_analysis_report_by_department(
     department_id: int,
     from_: Optional[str] = Query(None),
     to_: Optional[str] = Query(None),
-    # access_token: str = Depends(bearer_schema)
+    access_token: str = Depends(bearer_schema)
 ):
+    staff_id = Auth.verify_token(token=access_token.credentials, for_="login")
+    if not StaffOperator.has_stock_controller_permission(staff_id=staff_id):
+        raise AppError(message=PERMISSION_ERROR, status_code=401)
     return ReportDashboard.get_analysis_report_by_department(
         department_id=department_id,
         from_=from_,

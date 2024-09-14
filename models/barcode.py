@@ -1,7 +1,7 @@
 import datetime
 
 import sqlalchemy as sq
-from sqlalchemy import Column
+from sqlalchemy import Column, ForeignKey
 from sqlalchemy.orm import relationship
 
 from core.setup import Base
@@ -15,8 +15,14 @@ class Barcode(Base):
     code = Column(sq.String, index=True, nullable=False)
     specification = Column(sq.String, nullable=False)
     location = Column(sq.String, nullable=False)
-    category = Column(sq.String, nullable=False)
+    category_id = Column(sq.Integer, ForeignKey("categories.id"), nullable=False)
     erm_code = Column(sq.String, nullable=True)
+    category = relationship(
+        "Category",
+        back_populates="barcode",
+        passive_updates=True,
+        lazy="selectin"
+    )
     stock = relationship(
         "Stock",
         back_populates="barcode",
