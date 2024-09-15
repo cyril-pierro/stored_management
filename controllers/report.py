@@ -3,6 +3,7 @@ from models.department import Department
 from models.stock_adjustment import StockAdjustment
 from models.order import Orders
 from models.barcode import Barcode
+from models.stock_out import StockOut
 from controllers.stock_running import StockRunningOperator
 from controllers.stock_out import StockOutOperator
 from controllers.stock import StockOperator
@@ -69,7 +70,7 @@ class ReportDashboard:
                 db.query(
                     Department.name, func.count(
                         Orders.id), func.sum(Orders.quantity),
-                    func.sum(Orders.quantity * Orders.total_cost)
+                    func.sum(Orders.total_cost)
                 )
                 .outerjoin(
                     Orders, Orders.staff.has(

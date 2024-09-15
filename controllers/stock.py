@@ -137,6 +137,7 @@ class StockOperator:
                         order_id=order_id,
                         cost=stock.costs.cost
                     )
+                    total_cost += stock.costs.cost * quantity
                     should_break = True
                     
                 else:
@@ -158,7 +159,7 @@ class StockOperator:
                         order_id=order_id,
                         cost=stock.costs.cost
                     )
-                total_cost += stock.costs.cost
+                    total_cost += stock.costs.cost * old_quantity
                 if should_break:
                     break
         return total_cost
