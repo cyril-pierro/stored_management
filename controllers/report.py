@@ -3,7 +3,6 @@ from models.department import Department
 from models.stock_adjustment import StockAdjustment
 from models.order import Orders
 from models.barcode import Barcode
-from models.stock_out import StockOut
 from controllers.stock_running import StockRunningOperator
 from controllers.stock_out import StockOutOperator
 from controllers.stock import StockOperator
@@ -275,8 +274,9 @@ class ReportDashboard:
                     func.sum(Orders.quantity).label('total_quantity'),
                 )
                 .where(
-                    and_(
-                        Orders.barcode.has(Barcode.erm_code.is_not(None))),
+                    # and_(
+                    #     Orders.barcode.has(Barcode.erm_code.is_not(None))
+                    # ),
                     extract('year', Orders.created_at) == year
                 )
                 .group_by('month')
@@ -291,3 +291,16 @@ class ReportDashboard:
             }
             for date_time, num_of_orders, quantity in results
         ]
+
+    @staticmethod
+    def get_collection_yearly_values():
+        with DBSession() as db:
+            stmt = (
+                select(
+                    func.date_trunc('year', Orders.created_at).label('year'),
+                )
+                .group_by('year')
+            )
+
+        results = db.execute(stmt).scalars().all()
+        return [result.year for result in results]

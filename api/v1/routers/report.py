@@ -138,3 +138,16 @@ async def get_collection_report(
     if not StaffOperator.has_stock_controller_permission(staff_id=staff_id):
         raise AppError(message=PERMISSION_ERROR, status_code=401)
     return ReportDashboard.monthly_collection_report(year=year)
+
+
+@op_router.get(
+    "/collection/yearly",
+    response_model=list[MonthlyCollectionOut]
+)
+async def get_collection_yearly_values(
+    access_token: str = Depends(bearer_schema)
+):
+    staff_id = Auth.verify_token(token=access_token.credentials, for_="login")
+    if not StaffOperator.has_stock_controller_permission(staff_id=staff_id):
+        raise AppError(message=PERMISSION_ERROR, status_code=401)
+    return ReportDashboard.get_collection_yearly_values()
