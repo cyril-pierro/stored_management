@@ -141,8 +141,8 @@ async def get_collection_report(
 
 
 @op_router.get(
-    "/collection/yearly",
-    response_model=list[MonthlyCollectionOut]
+    "/collection/years",
+    response_model=list[int]
 )
 async def get_collection_yearly_values(
     access_token: str = Depends(bearer_schema)
