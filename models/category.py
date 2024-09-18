@@ -36,14 +36,13 @@ class Category(Base):
             db.delete(self)
             db.commit()
             return True
-    
+
     def json(self):
         return {
             "id": self.id,
             "name": self.name,
             "created_at": self.created_at.isoformat(),
         }
-    
 
     @staticmethod
     def add(data: CategoryIn) -> "Category":

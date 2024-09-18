@@ -8,12 +8,6 @@ from schemas.staff import StaffOut
 from utils.enum import OrderStatus, RunningStockStatus
 
 
-class CostOut(BaseModel):
-    id: int
-    cost: float
-    created_at: datetime
-
-
 class BarcodeIn(BaseModel):
     barcode: str
     specification: str
@@ -75,7 +69,7 @@ class StockOut(BaseModel):
     quantity_initiated: int
     sold: bool
     barcode: Barcode
-    costs: CostOut
+    cost: float
     creator: Optional[StaffOut] = None
     modifier: Optional[StaffOut] = None
     created_at: datetime

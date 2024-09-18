@@ -23,7 +23,6 @@ def parse_stock_adjustment_data(data: Union[Any, list, None]):
                 "location": i[0].location,
                 "specification": i[0].specification,
                 "code": i[0].code,
-                # "cost": i[0].cost,
                 "quantity": i[1],
                 "department_id": i[2],
             }
@@ -35,7 +34,6 @@ def parse_stock_adjustment_data(data: Union[Any, list, None]):
         "location": data[0].location,
         "specification": data[0].specification,
         "code": data[0].code,
-        # "cost": data[0].cost,
         "quantity": data[1],
         "department_id": data[2],
     }

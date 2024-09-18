@@ -9,7 +9,7 @@ from utils.session import DBSession
 
 
 class Barcode(Base):
-    __tablename__ = "barcode"
+    __tablename__ = "barcodes"
     id = Column(sq.Integer, primary_key=True, unique=True, index=True, nullable=False)
     barcode = Column(sq.String, unique=True, index=True, nullable=False)
     code = Column(sq.String, index=True, nullable=False)

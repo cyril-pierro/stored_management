@@ -31,7 +31,7 @@ def upgrade() -> None:
                     'categories', ['id'], unique=True)
     op.create_index(op.f('ix_categories_name'),
                     'categories', ['name'], unique=True)
-    op.add_column("barcode", sa.Column("category_id", sa.Integer))
+    op.add_column("barcodes", sa.Column("category_id", sa.Integer))
     # ### end Alembic commands ###
 
 

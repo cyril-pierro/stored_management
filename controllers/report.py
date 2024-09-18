@@ -201,7 +201,7 @@ class ReportDashboard:
                 [
                     {
                         "quantity": stock.quantity_initiated,
-                        "cost": stock.costs.cost,
+                        "cost": stock.cost,
                         "created_at": stock.created_at.isoformat(),
                     }
                     for stock in stocks
@@ -274,9 +274,6 @@ class ReportDashboard:
                     func.sum(Orders.quantity).label('total_quantity'),
                 )
                 .where(
-                    # and_(
-                    #     Orders.barcode.has(Barcode.erm_code.is_not(None))
-                    # ),
                     extract('year', Orders.created_at) == year
                 )
                 .group_by('month')

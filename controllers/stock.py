@@ -7,7 +7,6 @@ from controllers.stock_running import StockRunningOperator as SR
 from controllers.stock_out import StockOutOperator as SO
 from error import AppError
 from models.barcode import Barcode
-from models.cost import Costs
 from models.stock import Stock
 from models.category import Category
 from models.evaluation import CostEvaluation
@@ -56,41 +55,16 @@ class StockOperator:
             return db.query(Barcode).order_by(Barcode.id.desc()).all()
 
     @staticmethod
-    def get_or_generate_cost(
-        cost: float,
-    ) -> Costs:
-        with DBSession() as db:
-            cost_found = (
-                db.query(Costs)
-                .filter(
-                    and_(
-                        Costs.cost == cost,
-                    )
-                )
-                .first()
-            )
-            if not cost_found:
-                new_cost = Costs(
-                    cost=cost,
-                )
-                db.add(new_cost)
-                db.commit()
-                db.refresh(new_cost)
-                return new_cost
-        return cost_found
-
-    @staticmethod
     def add_stock(data: StockIn, staff_id: int):
         barcode_found = StockOperator.get_barcode(data.barcode_id)
         cost_allocated = data.__dict__.pop("cost")
         quantity_allocated = data.__dict__.pop("quantity")
         if not barcode_found:
             raise AppError(message="Invalid Barcode Provided", status_code=400)
-        cost_created = StockOperator.get_or_generate_cost(cost=cost_allocated)
         new_stock = Stock(
             barcode_id=barcode_found.id,
             created_by=staff_id,
-            cost_id=cost_created.id,
+            cost=cost_allocated,
             quantity=quantity_allocated,
             quantity_initiated=quantity_allocated,
         )
@@ -135,11 +109,11 @@ class StockOperator:
                         barcode_id=barcode_id,
                         quantity=quantity,
                         order_id=order_id,
-                        cost=stock.costs.cost
+                        cost=stock.cost
                     )
-                    total_cost += stock.costs.cost * quantity
+                    total_cost += stock.cost * quantity
                     should_break = True
-                    
+
                 else:
                     old_quantity = stock.quantity
                     quantity = quantity - stock.quantity
@@ -157,9 +131,9 @@ class StockOperator:
                         barcode_id=barcode_id,
                         quantity=old_quantity,
                         order_id=order_id,
-                        cost=stock.costs.cost
+                        cost=stock.cost
                     )
-                    total_cost += stock.costs.cost * old_quantity
+                    total_cost += stock.cost * old_quantity
                 if should_break:
                     break
         return total_cost
@@ -168,9 +142,9 @@ class StockOperator:
     def add_cost_evaluation_data(stock_obj: Stock, quantity: int):
         new_cost_data = CostEvaluation(
             barcode_id=stock_obj.barcode_id,
-            cost=stock_obj.costs.cost,
+            cost=stock_obj.cost,
             quantity=quantity,
-            total=round(float(quantity * stock_obj.costs.cost), 2),
+            total=round(float(quantity * stock_obj.cost), 2),
         )
         new_cost_data.save()
 
@@ -186,10 +160,9 @@ class StockOperator:
                 db.query(
                     Barcode,
                     func.sum(Stock.quantity_initiated).label("total_quantity"),
-                    func.array_agg(Costs.cost).label("cost_list"),
+                    func.array_agg(Stock.cost).label("cost_list"),
                 )
                 .join(Stock, Barcode.id == Stock.barcode_id)
-                .join(Costs, Stock.cost_id == Costs.id)
                 .group_by(Barcode)
             )
         return parse_stock_data(query.all())
@@ -214,10 +187,9 @@ class StockOperator:
                 db.query(
                     Barcode,
                     func.sum(Stock.quantity).label("total_quantity"),
-                    func.array_agg(Costs.cost).label("cost_list"),
+                    func.array_agg(Stock.cost).label("cost_list"),
                 )
                 .join(Stock, Barcode.id == Stock.barcode_id)
-                .join(Costs, Stock.cost_id == Costs.id)
                 .filter(Barcode.barcode == barcode)
                 .group_by(Barcode)
             )
@@ -292,8 +264,7 @@ class StockOperator:
         stock_found.quantity = quantity
         stock_found.quantity_initiated = quantity
         stock_found.updated_at = datetime.datetime.now()
-        cost_id = StockOperator.get_or_generate_cost(cost).id
-        stock_found.cost_id = cost_id
+        stock_found.cost = data.cost
         SR.create_running_stock(
             barcode=stock_found.barcode.barcode,
             stock_operator=StockOperator,
@@ -345,8 +316,9 @@ class ScanStock:
             )
         category_found = Category.get(data.category)
         if not category_found:
-            raise ValueError("Please enter a category before you add a barcode")
-        
+            raise ValueError(
+                "Please enter a category before you add a barcode")
+
         data.__dict__["code"] = generate_codes(
             previous_code=last_barcode.code if last_barcode else None,
             category=data.category,

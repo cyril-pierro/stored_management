@@ -10,9 +10,9 @@ from utils.session import DBSession
 
 
 class StockRunning(Base):
-    __tablename__ = "stock_running"
+    __tablename__ = "stock_runnings"
     id = Column(sq.Integer, primary_key=True, unique=True, index=True)
-    barcode_id = Column(sq.Integer, ForeignKey("barcode.id"), nullable=False)
+    barcode_id = Column(sq.Integer, ForeignKey("barcodes.id"), nullable=False)
     stock_quantity = Column(sq.Integer, nullable=False)
     out_quantity = Column(sq.Integer, nullable=False, default=0)
     adjustment_quantity = Column(sq.Integer, nullable=False, default=0)

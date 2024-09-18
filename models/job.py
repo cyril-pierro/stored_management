@@ -9,7 +9,7 @@ from utils.session import DBSession
 
 
 class Job(Base):
-    __tablename__ = "job"
+    __tablename__ = "jobs"
     id = Column(sq.Integer, primary_key=True, unique=True, index=True)
     name = Column(sq.String(200), nullable=False, unique=True)
     staff = relationship("Staff", back_populates="job")

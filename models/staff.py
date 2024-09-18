@@ -17,12 +17,12 @@ context = CryptContext(["bcrypt"], deprecated="auto")
 
 
 class Staff(Base):
-    __tablename__ = "staff"
+    __tablename__ = "staffs"
     id = Column(sq.Integer, primary_key=True, unique=True, index=True)
     name = Column(sq.String, nullable=False)
     staff_id_number = Column(sq.String, nullable=False, unique=True, index=True)
-    job_id = Column(sq.Integer, ForeignKey("job.id"), nullable=False)
-    department_id = Column(sq.Integer, ForeignKey("department.id"), nullable=False)
+    job_id = Column(sq.Integer, ForeignKey("jobs.id"), nullable=False)
+    department_id = Column(sq.Integer, ForeignKey("departments.id"), nullable=False)
     role_id = Column(sq.Integer, ForeignKey("roles.id"), nullable=False)
     hash_password = Column(sq.String, nullable=False)
     job = relationship(Job, back_populates="staff", lazy="subquery")

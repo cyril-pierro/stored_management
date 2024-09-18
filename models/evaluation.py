@@ -11,7 +11,7 @@ from utils.session import DBSession
 class CostEvaluation(Base):
     __tablename__ = "cost_evaluation"
     id = Column(sq.Integer, primary_key=True, unique=True, index=True)
-    barcode_id = Column(sq.Integer, ForeignKey("barcode.id"))
+    barcode_id = Column(sq.Integer, ForeignKey("barcodes.id"))
     quantity = Column(sq.Integer)
     cost = Column(sq.Float)
     total = Column(sq.Float)

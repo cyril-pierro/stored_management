@@ -9,22 +9,15 @@ from utils.session import DBSession
 
 
 class Stock(Base):
-    __tablename__ = "stock"
+    __tablename__ = "stocks"
     id = Column(sq.Integer, primary_key=True, unique=True, index=True)
-    barcode_id = Column(sq.Integer, ForeignKey("barcode.id"), nullable=False)
+    barcode_id = Column(sq.Integer, ForeignKey("barcodes.id"), nullable=False)
     quantity = Column(sq.Integer, default=0)
     quantity_initiated = Column(sq.Integer, nullable=False, default=0, server_default="0")
     sold = Column(sq.Boolean, default=False)
-    cost_id = Column(sq.Integer, ForeignKey("costs.id"), nullable=False)
-    created_by = Column(sq.Integer, ForeignKey("staff.id"))
-    updated_by = Column(sq.Integer, ForeignKey("staff.id"))
-    costs = relationship(
-        "Costs",
-        lazy="selectin",
-        back_populates="stock",
-        passive_deletes="all",
-        passive_updates=True,
-    )
+    cost = Column(sq.Float, nullable=False)
+    created_by = Column(sq.Integer, ForeignKey("staffs.id"))
+    updated_by = Column(sq.Integer, ForeignKey("staffs.id"))
     creator = relationship(
         "Staff",
         foreign_keys=[created_by],

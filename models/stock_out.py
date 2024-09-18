@@ -9,9 +9,9 @@ from utils.session import DBSession
 
 
 class StockOut(Base):
-    __tablename__ = "stock_out"
+    __tablename__ = "stock_outs"
     id = Column(sq.Integer, primary_key=True, unique=True, index=True)
-    barcode_id = Column(sq.Integer, ForeignKey("barcode.id"), nullable=False)
+    barcode_id = Column(sq.Integer, ForeignKey("barcodes.id"), nullable=False)
     order_id = Column(sq.Integer, ForeignKey("orders.id"))
     quantity = Column(sq.Integer, nullable=False)
     cost = Column(sq.Float, nullable=True)

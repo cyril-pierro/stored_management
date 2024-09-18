@@ -13,8 +13,8 @@ from utils.session import DBSession
 class Orders(Base):
     __tablename__ = "orders"
     id = Column(sq.Integer, primary_key=True, unique=True, index=True)
-    staff_id = Column(sq.Integer, ForeignKey("staff.id"))
-    barcode_id = Column(sq.Integer, ForeignKey("barcode.id"), nullable=False)
+    staff_id = Column(sq.Integer, ForeignKey("staffs.id"))
+    barcode_id = Column(sq.Integer, ForeignKey("barcodes.id"), nullable=False)
     part_name = Column(sq.String, nullable=True)
     job_number = Column(sq.String, nullable=False)
     quantity = Column(sq.Integer)
