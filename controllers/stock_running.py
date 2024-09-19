@@ -31,6 +31,7 @@ class StockRunningOperator:
             raise ValueError("No stocks available for barcode")
 
         quantity = stock_data.get("quantity", 0)
+        total_cost = stock_data.get("prices", 0)
         existing_stock = StockRunningOperator.get_stock_in_inventory(barcode)
 
         if existing_stock:
@@ -45,6 +46,7 @@ class StockRunningOperator:
                 should_delete_quantity=should_delete_quantity,
             )
             updated_status = StockRunningOperator.update_status(updated_stock)
+            updated_status.cost = total_cost
             return updated_status.save(merge=True)
         else:
             # Create new stock
@@ -62,6 +64,7 @@ class StockRunningOperator:
                     else RunningStockStatus.available.name
                 ),
             )
+            new_running_stock.cost = total_cost
             return new_running_stock.save()
 
     @staticmethod

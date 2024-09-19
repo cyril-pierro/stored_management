@@ -17,6 +17,7 @@ class StockRunning(Base):
     out_quantity = Column(sq.Integer, nullable=False, default=0)
     adjustment_quantity = Column(sq.Integer, nullable=False, default=0)
     remaining_quantity = Column(sq.Integer, nullable=False)
+    cost = Column(sq.Float, nullable=False, default=0)
     status = Column(
         sq.Enum(RunningStockStatus), default=RunningStockStatus.available.name
     )
@@ -41,6 +42,7 @@ class StockRunning(Base):
             "out_quantity": self.out_quantity,
             "adjustment_quantity": self.adjustment_quantity,
             "remaining_quantity": self.remaining_quantity,
+            "cost": self.cost,
             "status": self.status.value,
             "barcode": self.barcode.json(),
             "created_at": self.created_at.isoformat(),

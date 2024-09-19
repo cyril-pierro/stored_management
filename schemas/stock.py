@@ -125,6 +125,7 @@ class RunningStockOut(BaseModel):
     out_quantity: int
     adjustment_quantity: int
     remaining_quantity: int
+    cost: float
     barcode: Barcode
     created_at: datetime
 

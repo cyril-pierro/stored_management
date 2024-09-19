@@ -28,7 +28,7 @@ def parse_stock_data(stock_data: Union[Any, list, None]):
                 "specification": data[0].specification,
                 "location": data[0].location,
                 "quantity": data[1],
-                "prices": set(data[2]),
+                "prices": data[2],
             }
             for data in stock_data
         ]
@@ -39,7 +39,7 @@ def parse_stock_data(stock_data: Union[Any, list, None]):
         "specification": stock_data[0].specification,
         "location": stock_data[0].location,
         "quantity": stock_data[1],
-        "prices": set(stock_data[2]),
+        "prices": stock_data[2],
     }
 
 
@@ -187,7 +187,7 @@ class StockOperator:
                 db.query(
                     Barcode,
                     func.sum(Stock.quantity).label("total_quantity"),
-                    func.array_agg(Stock.cost).label("cost_list"),
+                    func.sum(Stock.cost),
                 )
                 .join(Stock, Barcode.id == Stock.barcode_id)
                 .filter(Barcode.barcode == barcode)
@@ -248,7 +248,6 @@ class StockOperator:
     def update_stock(stock_id: int, data: StockIn, staff_id: int):
         values = data.__dict__
         quantity = values.pop("quantity")
-        cost = values.pop("cost")
         stock_found = StockOperator.get_stock_by(stock_id)
         if not stock_found:
             raise ValueError("Stock not found")
