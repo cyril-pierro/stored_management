@@ -187,7 +187,7 @@ class StockOperator:
                 db.query(
                     Barcode,
                     func.sum(Stock.quantity).label("total_quantity"),
-                    func.sum(Stock.cost),
+                    func.sum(Stock.cost * Stock.quantity_initiated),
                 )
                 .join(Stock, Barcode.id == Stock.barcode_id)
                 .filter(Barcode.barcode == barcode)
