@@ -6,6 +6,7 @@ from utils.enum import RunningStockStatus
 from utils.session import DBSession
 from schemas.stock import StockQuery
 from utils.countFilter import StockFilter
+from controllers.stock_out import StockOutOperator
 from typing import Union
 from datetime import datetime as dt
 from sqlalchemy import and_
@@ -31,9 +32,11 @@ class StockRunningOperator:
             raise ValueError("No stocks available for barcode")
 
         quantity = stock_data.get("quantity", 0)
-        total_cost = stock_data.get("prices", 0)
+        total_stock_value = stock_data.get("prices", 0)
+        total_stock_out_value = StockOutOperator.get_all_stock_outs_for_barcode(
+            barcode)
         existing_stock = StockRunningOperator.get_stock_in_inventory(barcode)
-
+        total_cost = total_stock_value - total_stock_out_value
         if existing_stock:
             # Update existing stock
             updated_stock = StockRunningOperator.update_stock(

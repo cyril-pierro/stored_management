@@ -81,6 +81,16 @@ class StockOutOperator:
                 .group_by(StockOut.barcode_id, Barcode.id)
             )
         return parse_stock_out_data(query.one_or_none())
+    
+    @staticmethod
+    def get_all_stock_outs_for_barcode(barcode: str):
+        with DBSession() as db:
+            value = db.query(
+                func.sum(StockOut.quantity * StockOut.cost)
+                ).filter(
+                StockOut.barcode.has(Barcode.barcode == barcode)
+            ).first()
+            return value[0]
 
     @staticmethod
     def get_stock_out_data_for_barcode(
