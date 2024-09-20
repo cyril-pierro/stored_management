@@ -36,7 +36,7 @@ class StockRunningOperator:
         total_stock_out_value = StockOutOperator.get_all_stock_outs_for_barcode(
             barcode)
         existing_stock = StockRunningOperator.get_stock_in_inventory(barcode)
-        total_cost = total_stock_value - total_stock_out_value
+        total_cost = total_stock_value - (total_stock_out_value or 0)
         if existing_stock:
             # Update existing stock
             updated_stock = StockRunningOperator.update_stock(
