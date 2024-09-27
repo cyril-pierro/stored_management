@@ -212,7 +212,7 @@ async def get_stock_out_group_data_by_id(
 
 @op_router.post(
     "/stock-adjustment/{barcode}",
-    response_model=StockAdjustmentOut,
+    response_model=SuccessOut,
 )
 async def create_stock_adjustment(
     barcode: str, data: StockAdjustmentIn, access_token: str = Depends(bearer_schema)
@@ -220,8 +220,9 @@ async def create_stock_adjustment(
     staff_id = Auth.verify_token(token=access_token.credentials, for_="login")
     if not StaffOperator.has_stock_controller_permission(staff_id=staff_id):
         raise AppError(message=PERMISSION_ERROR, status_code=401)
-    return SA.create_stock_adjustment(barcode, data, staff_id)
-
+    status = SA.create_stock_adjustment(barcode, data, staff_id)
+    if status:
+        return {"message": "Stock adjustment created successfully"}
 
 @op_router.get("/stock-adjustment/history", response_model=list[StockAdjustmentOut])
 async def get_stock_adjustment_history(access_token: str = Depends(bearer_schema)):

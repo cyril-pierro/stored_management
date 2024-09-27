@@ -12,6 +12,7 @@ from datetime import datetime as dt
 from sqlalchemy import and_
 
 StockOperator = TypeVar("StockOperator")
+StockAdjustmentOperator = TypeVar("StockAdjustmentOperator")
 
 
 class StockRunningOperator:
@@ -25,9 +26,11 @@ class StockRunningOperator:
         adjustment_quantity: int = 0,
         order_quantity: int = 0,
         should_delete_quantity: bool = False,
+        stock_adjustment_op: StockAdjustmentOperator = None,
     ) -> StockRunning:
         stock_data = stock_operator.get_grouped_stocks_with_stock_barcode(
             barcode)
+        total_stock_adjustment_value = 0
         if not stock_data:
             raise ValueError("No stocks available for barcode")
 
@@ -35,8 +38,13 @@ class StockRunningOperator:
         total_stock_value = stock_data.get("prices", 0)
         total_stock_out_value = StockOutOperator.get_all_stock_outs_for_barcode(
             barcode)
+        if stock_adjustment_op:
+            total_stock_adjustment_value = stock_adjustment_op.get_stock_adjustments_value(
+                barcode=barcode
+            )
         existing_stock = StockRunningOperator.get_stock_in_inventory(barcode)
-        total_cost = total_stock_value - (total_stock_out_value or 0)
+        total_cost = total_stock_value - \
+            ((total_stock_out_value or 0) + (total_stock_adjustment_value or 0))
         if existing_stock:
             # Update existing stock
             updated_stock = StockRunningOperator.update_stock(

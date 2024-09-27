@@ -1,13 +1,17 @@
 import datetime
 from typing import Any, Union
 
-from sqlalchemy import func
+from sqlalchemy import func, and_
 
 from controllers.stock import StockOperator as SO
 from controllers.stock_running import StockRunningOperator as SR
 from models.barcode import Barcode
 from models.stock_adjustment import StockAdjustment
-from schemas.stock import StockAdjustmentIn, UpdateStockAdjustmentIn, StockQuery
+from schemas.stock import (
+    StockAdjustmentIn,
+    UpdateStockAdjustmentIn,
+    StockQuery
+)
 from utils.session import DBSession
 from utils.countFilter import StockFilter
 
@@ -48,7 +52,11 @@ class StockAdjustmentOperator:
         return data
 
     @staticmethod
-    def create_stock_adjustment(barcode: str, data: StockAdjustmentIn, staff_id: int):
+    def create_stock_adjustment(
+        barcode: str,
+        data: StockAdjustmentIn,
+        staff_id: int
+    ) -> bool:
         stock = SO.get_grouped_stocks_with_stock_barcode(barcode)
 
         if not stock:
@@ -60,12 +68,32 @@ class StockAdjustmentOperator:
             raise ValueError(
                 "Stock adjustment Entry error. Quantity entered is more than Stock available quantity"
             )
-        values = data.__dict__
-        values["created_by"] = staff_id
         barcode_found = SO.get_barcode(barcode)
-        values["barcode_id"] = barcode_found.id
-        stock_adj = StockAdjustment(**values)
-        value = stock_adj.save()
+        all_stocks = SO.get_all_stocks_not_sold(barcode_found.id)
+        if not all_stocks:
+            raise ValueError("No Stocks available to be adjusted")
+        for stock in all_stocks:
+            if stock.quantity <= data.quantity:
+                stock_aj = StockAdjustment(
+                    barcode_id=barcode_found.id,
+                    created_by=staff_id,
+                    quantity=stock.quantity,
+                    cost=stock.cost,
+                    department_id=data.department_id,
+                )
+                stock_aj.save()
+                data.quantity -= stock.quantity
+            else:
+                stock_aj = StockAdjustment(
+                    barcode_id=barcode_found.id,
+                    created_by=staff_id,
+                    quantity=data.quantity,
+                    cost=stock.cost,
+                    department_id=data.department_id,
+                )
+                stock_aj.save()
+                break
+
         grouped_data: dict[str, Any] = (
             StockAdjustmentOperator.get_grouped_stock_adjustments_by_barcode(
                 barcode)
@@ -75,8 +103,19 @@ class StockAdjustmentOperator:
             stock_operator=SO,
             adjustment_quantity=grouped_data.get("quantity"),
             order_quantity=data.quantity,
+            stock_adjustment_op=StockAdjustmentOperator
         )
-        return value
+        return True
+    
+    @staticmethod
+    def get_stock_adjustments_value(barcode: str):
+        with DBSession() as db:
+            value = db.query(
+                func.sum(StockAdjustment.quantity * StockAdjustment.cost)
+                ).filter(
+                StockAdjustment.barcode.has(Barcode.barcode == barcode)
+            ).first()
+            return value[0]
 
     @staticmethod
     def update_stock_adjustment(id: int, data: UpdateStockAdjustmentIn, staff_id: int):
@@ -164,3 +203,24 @@ class StockAdjustmentOperator:
                 .group_by(StockAdjustment.barcode_id, Barcode.id, StockAdjustment.department_id)
             )
         return parse_stock_adjustment_data(query.one_or_none())
+    
+    @staticmethod
+    def get_stock_adjustment_data_for_barcode(
+        barcode: Union[int, str],
+        from_datetime: Any,
+        to_datetime: Any
+    ):
+        if not from_datetime:
+            condition = StockAdjustment.created_at <= to_datetime
+        else:
+            condition = StockAdjustment.created_at.between(
+                from_datetime, to_datetime
+            )
+
+        with DBSession() as db:
+            return db.query(StockAdjustment).filter(
+                and_(
+                    StockAdjustment.barcode.has(Barcode.barcode == barcode),
+                    condition
+                )
+            ).all()

@@ -139,6 +139,14 @@ class StockOperator:
         return total_cost
 
     @staticmethod
+    def get_all_stocks_not_sold(barcode_id: int) -> list[Stock]:
+        with DBSession() as db:
+            return db.query(Stock)\
+                .filter(and_(Stock.barcode_id == barcode_id, Stock.sold.is_(False)))\
+                .order_by(Stock.id.asc())\
+                .all()
+
+    @staticmethod
     def add_cost_evaluation_data(stock_obj: Stock, quantity: int):
         new_cost_data = CostEvaluation(
             barcode_id=stock_obj.barcode_id,

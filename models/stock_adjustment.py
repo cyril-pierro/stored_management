@@ -12,6 +12,7 @@ class StockAdjustment(Base):
     __tablename__ = "stock_adjustments"
     id = Column(sq.Integer, primary_key=True, unique=True, index=True)
     quantity = Column(sq.Integer, nullable=False, default=0)
+    cost = Column(sq.Float, nullable=False, default=0)
     barcode_id = Column(sq.Integer, ForeignKey("barcodes.id"), nullable=False)
     department_id = Column(sq.Integer, ForeignKey("departments.id"))
     created_by = Column(sq.Integer, ForeignKey("staffs.id"))

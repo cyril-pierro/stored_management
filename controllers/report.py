@@ -6,6 +6,7 @@ from models.barcode import Barcode
 from controllers.stock_running import StockRunningOperator
 from controllers.stock_out import StockOutOperator
 from controllers.stock import StockOperator
+from controllers.stock_adjustment import StockAdjustmentOperator
 from utils.session import DBSession
 from sqlalchemy import func, and_, select, extract
 from parser.report import ReportParser
@@ -169,6 +170,9 @@ class ReportDashboard:
         stock_out = StockOutOperator.get_stock_out_data_for_barcode(
             barcode, from_datetime, to_datetime
         )
+        stock_adjustment = StockAdjustmentOperator.get_stock_adjustment_data_for_barcode(
+            barcode=barcode, from_datetime=from_datetime, to_datetime=to_datetime
+        )
 
         stocks = StockOperator.get_stock_report(
             barcode, from_datetime, to_datetime)
@@ -209,6 +213,13 @@ class ReportDashboard:
                 if stocks
                 else []
             ),
+            "stock_adjustment": [
+                {
+                    "quantity": stock_adj.quantity,
+                    "cost": stock_adj.cost,
+                    "created_at": stock_adj.created_at.isoformat(),
+                } for stock_adj in stock_adjustment
+            ] if stock_adjustment else []
         }
 
     @staticmethod
