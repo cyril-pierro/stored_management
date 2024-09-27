@@ -318,6 +318,7 @@ class ReportDashboard:
     def get_reports_for_erm_codes(erm_code: str, from_: str = None, to_: str = None):
         order_filters = []
         stock_filters = []
+        stock_adj_filters = []
         if from_:
             from_datetime = datetime.strptime(from_, "%Y-%m-%d")
             order_filters.append(
@@ -336,6 +337,11 @@ class ReportDashboard:
             )
             stock_filters.append(
                 Stock.created_at <= to_datetime +
+                timedelta(hours=23, minutes=59, seconds=59)
+            )
+
+            stock_adj_filters.append(
+                StockAdjustment.created_at <= to_datetime +
                 timedelta(hours=23, minutes=59, seconds=59)
             )
 
@@ -360,6 +366,11 @@ class ReportDashboard:
                 and_(*stock_filters)
             ).all()
 
+            stock_adj = db.query(StockAdjustment).filter(
+                StockAdjustment.barcode.has(Barcode.erm_code == erm_code),
+                and_(*stock_adj_filters)
+            ).all()
+
             return {
                 "stock_in": [
                     {
@@ -382,5 +393,13 @@ class ReportDashboard:
                         ]
                     }
                     for order in orders
-                ] if orders else []
+                ] if orders else [],
+                "stock_adjustment": [
+                    {
+                        "created_at": stock.created_at.isoformat(),
+                        "quantity": stock.quantity,
+                        "cost": stock.cost
+                    }
+                    for stock in stock_adj
+                ] if stock_adj else [],
             }

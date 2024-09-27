@@ -136,6 +136,7 @@ async def get_analysis_report_by_erm_code(
     staff_id = Auth.verify_token(token=access_token.credentials, for_="login")
     if not StaffOperator.has_stock_controller_permission(staff_id=staff_id):
         raise AppError(message=PERMISSION_ERROR, status_code=401)
+    erm_code = erm_code.upper() if erm_code else erm_code
     return ReportDashboard.get_reports_for_erm_codes(
         erm_code=erm_code,
         from_=from_,
