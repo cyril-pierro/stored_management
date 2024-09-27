@@ -3,6 +3,7 @@ from models.department import Department
 from models.stock_adjustment import StockAdjustment
 from models.order import Orders
 from models.barcode import Barcode
+from models.stock import Stock
 from controllers.stock_running import StockRunningOperator
 from controllers.stock_out import StockOutOperator
 from controllers.stock import StockOperator
@@ -312,3 +313,74 @@ class ReportDashboard:
 
         results = db.execute(stmt).scalars().all()
         return [result.year for result in results]
+
+    @staticmethod
+    def get_reports_for_erm_codes(erm_code: str, from_: str = None, to_: str = None):
+        order_filters = []
+        stock_filters = []
+        if from_:
+            from_datetime = datetime.strptime(from_, "%Y-%m-%d")
+            order_filters.append(
+                Orders.created_at
+                >= from_datetime + timedelta(hours=0, minutes=0, seconds=0)
+            )
+            stock_filters.append(
+                Stock.created_at >= from_datetime +
+                timedelta(hours=0, minutes=0, seconds=0)
+            )
+        if to_:
+            to_datetime = datetime.strptime(to_, "%Y-%m-%d")
+            order_filters.append(
+                Orders.created_at
+                <= to_datetime + timedelta(hours=23, minutes=59, seconds=59)
+            )
+            stock_filters.append(
+                Stock.created_at <= to_datetime +
+                timedelta(hours=23, minutes=59, seconds=59)
+            )
+
+        with DBSession() as db:
+            if not order_filters:
+                orders = (
+                    db.query(Orders)
+                    .filter(Orders.barcode.has(Barcode.erm_code == erm_code))
+                    .all()
+                )
+            else:
+                orders = (
+                    db.query(Orders)
+                    .filter(
+                        Orders.barcode.has(
+                            Barcode.erm_code == erm_code), and_(*order_filters)
+                    )
+                    .all()
+                )
+            stock_in = db.query(Stock).filter(
+                Stock.barcode.has(Barcode.erm_code == erm_code),
+                and_(*stock_filters)
+            ).all()
+
+            return {
+                "stock_in": [
+                    {
+                        "created_at": stock.created_at.isoformat(),
+                        "quantity": stock.quantity_initiated,
+                        "cost": stock.cost
+                    }
+                    for stock in stock_in
+                ] if stock_in else [],
+                "stock_out": [
+                    {
+                        "values": [
+                            {
+                                "created_at": stock_out.created_at.isoformat(),
+                                "quantity": stock_out.quantity,
+                                "cost": stock_out.cost,
+
+                            }
+                            for stock_out in order.stock_out
+                        ]
+                    }
+                    for order in orders
+                ] if orders else []
+            }

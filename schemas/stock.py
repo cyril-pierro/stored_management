@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import Optional, Union
 
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
 from fastapi import Query
 
 from schemas.staff import StaffOut
@@ -14,6 +14,11 @@ class BarcodeIn(BaseModel):
     location: str
     category: str
     erm_code: Optional[str] = None
+    
+    @field_validator("erm_code")
+    @classmethod
+    def uppercase_erm_code(cls, erm_code: str):
+        return erm_code.upper()
 
     class Config:
         from_attributes = True

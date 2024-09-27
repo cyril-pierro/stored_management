@@ -126,6 +126,23 @@ async def get_analysis_report_by_department(
     )
 
 
+@op_router.get("/analysis/erm_code/{erm_code}")
+async def get_analysis_report_by_erm_code(
+    erm_code: str,
+    from_: Optional[str] = Query(None),
+    to_: Optional[str] = Query(None),
+    access_token: str = Depends(bearer_schema)
+):
+    staff_id = Auth.verify_token(token=access_token.credentials, for_="login")
+    if not StaffOperator.has_stock_controller_permission(staff_id=staff_id):
+        raise AppError(message=PERMISSION_ERROR, status_code=401)
+    return ReportDashboard.get_reports_for_erm_codes(
+        erm_code=erm_code,
+        from_=from_,
+        to_=to_
+    )
+
+
 @op_router.get(
     "/collection/monthly",
     response_model=list[MonthlyCollectionOut]
