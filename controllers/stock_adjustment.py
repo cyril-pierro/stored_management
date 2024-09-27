@@ -91,6 +91,8 @@ class StockAdjustmentOperator:
                     cost=stock.cost,
                     department_id=data.department_id,
                 )
+                stock.quantity -= data.quantity
+                stock.save(merge=True)
                 stock_aj.save()
                 break
 

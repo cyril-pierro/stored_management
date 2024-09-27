@@ -18,7 +18,7 @@ class BarcodeIn(BaseModel):
     @field_validator("erm_code")
     @classmethod
     def uppercase_erm_code(cls, erm_code: str):
-        return erm_code.upper()
+        return erm_code.upper() if erm_code else erm_code
 
     class Config:
         from_attributes = True
