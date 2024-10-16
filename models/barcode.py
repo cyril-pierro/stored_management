@@ -65,6 +65,13 @@ class Barcode(Base):
         passive_updates=True,
         lazy="subquery",
     )
+    purchase_order_items = relationship(
+        "PurchaseOrderItems",
+        back_populates="barcode",
+        passive_deletes="all",
+        passive_updates=True,
+        lazy="subquery",
+    )
     created_at = Column(sq.DateTime, default=datetime.datetime.now())
 
     def save(self, merge=False):

@@ -18,6 +18,9 @@ from models.stock_out import StockOut
 from models.stock_running import StockRunning
 from models.evaluation import CostEvaluation
 from models.category import Category
+from models.purchase_order_type import PurchaseOrderTypes
+from models.purchase_order_items import PurchaseOrderItems
+from models.purchase_order import PurchaseOrders
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.

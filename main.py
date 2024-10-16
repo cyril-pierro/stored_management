@@ -9,11 +9,14 @@ from pydantic import ValidationError
 from sqlalchemy.exc import DBAPIError, IntegrityError
 
 import handlers as hlp
-from api.v1.routers import auth
-from api.v1.routers import engineer as cu
-from api.v1.routers import operations as op
-from api.v1.routers import stock_control as scp
-from api.v1.routers import report
+from api.v1.routers import (
+    auth,
+    engineer as cu,
+    operations as op,
+    stock_control as scp,
+    report,
+    purchase_order
+)
 from core.setup import Base, engine
 from error import AppError
 from utils.common import responses
@@ -30,6 +33,7 @@ app = FastAPI(
 app.include_router(op.op_router, tags=["Management Operations"])
 app.include_router(scp.op_router, tags=["Stock Control Operations"])
 app.include_router(cu.op_router, tags=["Engineer Operations"])
+app.include_router(purchase_order.po_router, tags=["Purchase Order Operations"])
 app.include_router(auth.op_router, tags=["Authentication Operations"])
 app.include_router(report.op_router, tags=["Stock Reports"])
 

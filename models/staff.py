@@ -41,6 +41,13 @@ class Staff(Base):
     )
     orders = relationship(Orders, back_populates="staff", lazy="subquery")
     roles = relationship(Roles, back_populates="staff", lazy="subquery")
+    purchase_order_items = relationship(
+        "PurchaseOrderItems",
+        back_populates="requested_by_staff",
+        lazy="selectin",
+        passive_deletes="all",
+        passive_updates=True,
+    )
     created_at = Column(sq.DateTime, default=datetime.datetime.now())
 
     def save(self, merge=False) -> "Staff":

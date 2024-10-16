@@ -14,3 +14,9 @@ class OrderStatus(Enum):
 class RolesStatus(Enum):
     engineer = "engineer"
     stock_controller = "stock_controller"
+
+
+class PurchaseOrderStates(Enum):
+    draft = "draft"
+    sent = "sent"
+    validate = "validate"
