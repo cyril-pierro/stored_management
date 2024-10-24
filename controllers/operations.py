@@ -4,15 +4,37 @@ from typing import Union
 import error as err
 from models.department import Department
 from models.job import Job
+from models.groups import Groups
 from models.roles import Roles
 from models.staff import Staff
 from schemas.operations import JobIn
-from schemas.staff import ChangePasswordIn, LoginIn, StaffIn, UpdateStaffIn
-from utils.enum import RolesStatus
+from schemas.staff import ChangePasswordIn, LoginIn, StaffIn, UpdateStaffIn, GroupIn
+from utils.enum import RolesStatus, GroupStates
 from utils.redis import Cache
 from utils.session import DBSession
 
 INVALID_CRED = "Invalid Credentials"
+
+
+class GroupsOperator:
+    @staticmethod
+    def create_group(data: GroupIn):
+        new_group = Groups(**data.model_dump())
+        return new_group.save()
+
+    @staticmethod
+    def all_groups():
+        with DBSession() as db:
+            return db.query(Groups).all()
+
+    @staticmethod
+    def get_group(group_id: int):
+        with DBSession() as db:
+            found_group = db.query(Groups).filter(
+                Groups.id == group_id).first()
+            if not found_group:
+                raise ValueError("Group not found")
+            return found_group
 
 
 class JobOperator:
@@ -29,7 +51,8 @@ class JobOperator:
             if isinstance(name_or_id, int):
                 found_job = db.query(Job).filter(Job.id == name_or_id).first()
             else:
-                found_job = db.query(Job).filter(Job.name == name_or_id).first()
+                found_job = db.query(Job).filter(
+                    Job.name == name_or_id).first()
         return found_job
 
     @staticmethod
@@ -75,11 +98,13 @@ class DepartmentOperator:
         with DBSession() as db:
             if isinstance(name_or_id, int):
                 found_department = (
-                    db.query(Department).filter(Department.id == name_or_id).first()
+                    db.query(Department).filter(
+                        Department.id == name_or_id).first()
                 )
             else:
                 found_department = (
-                    db.query(Department).filter(Department.name == name_or_id).first()
+                    db.query(Department).filter(
+                        Department.name == name_or_id).first()
                 )
             return found_department
 
@@ -134,7 +159,8 @@ class StaffOperator:
                 )
             else:
                 found_department = (
-                    db.query(Staff).filter(Staff.staff_id_number == name_or_id).first()
+                    db.query(Staff).filter(
+                        Staff.staff_id_number == name_or_id).first()
                 )
         return found_department
 
@@ -188,9 +214,11 @@ class StaffOperator:
                     ex=timedelta(minutes=5),
                 )
             else:
-                Cache.incr(f"handle_number_of_retries_for_{data.staff_id_number}")
+                Cache.incr(
+                    f"handle_number_of_retries_for_{data.staff_id_number}")
             if (
-                int(Cache.get(f"handle_number_of_retries_for_{data.staff_id_number}"))
+                int(Cache.get(
+                    f"handle_number_of_retries_for_{data.staff_id_number}"))
                 > 5
             ):
                 raise err.AppError(
@@ -230,3 +258,33 @@ class StaffOperator:
                 status_code=401,
             )
         return staff_found.roles.name.name == RolesStatus.engineer.name
+
+    @staticmethod
+    def has_manager_permission(staff_id: int):
+        staff_found = StaffOperator.get_staff(staff_id)
+        if not staff_found:
+            raise err.AppError(
+                message="You do not have permission to perform this operation",
+                status_code=401,
+            )
+        return staff_found.groups.group.name == GroupStates.managers.name
+
+    @staticmethod
+    def assign_group_to_staff(staff_id: int, group_id: int):
+        GroupsOperator.get_group(group_id)
+        staff_found = StaffOperator.get_staff(staff_id)
+        if not staff_found:
+            raise ValueError("No staff found")
+        if staff_found.roles.name.name != RolesStatus.stock_controller.name:
+            raise ValueError(
+                "Can't assign groups to non stock controller users")
+        staff_found.group_id = group_id
+        return staff_found.save(merge=True)
+    
+    @staticmethod
+    def remove_user_from_any_group(staff_id: int):
+        staff_found = StaffOperator.get_staff(staff_id)
+        if not staff_found:
+            raise ValueError("No staff found")
+        staff_found.group_id = None
+        return staff_found.save(merge=True)

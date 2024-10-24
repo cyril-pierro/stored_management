@@ -20,3 +20,9 @@ class PurchaseOrderStates(Enum):
     draft = "draft"
     sent = "sent"
     validate = "validate"
+    canceled = "canceled"
+
+
+class GroupStates(Enum):
+    managers = "managers"
+    users = "users"

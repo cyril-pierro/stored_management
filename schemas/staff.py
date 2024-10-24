@@ -1,6 +1,17 @@
 from pydantic import BaseModel, Field
 
 from schemas.operations import DepartmentOut, JobOut, RolesOut
+from utils.enum import GroupStates
+from typing import Optional
+
+
+class GroupsOut(BaseModel):
+    id: int
+    group: GroupStates
+
+
+class GroupIn(BaseModel):
+    name: str
 
 
 class StaffIn(BaseModel):
@@ -19,6 +30,7 @@ class Staff(BaseModel):
     job: JobOut
     department: DepartmentOut
     roles: RolesOut
+    groups: GroupsOut
 
     class Config:
         from_attributes = True
@@ -31,6 +43,7 @@ class StaffOut(BaseModel):
     job: JobOut
     department: DepartmentOut
     roles: RolesOut
+    groups: Optional[GroupsOut] = None
 
     class Config:
         from_attributes = True

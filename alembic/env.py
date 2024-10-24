@@ -9,6 +9,7 @@ from models.barcode import Barcode
 from models.department import Department
 from models.email import Recipients
 from models.job import Job
+from models.groups import Groups
 from models.order import Orders
 from models.staff import Staff
 from models.roles import Roles
@@ -21,6 +22,7 @@ from models.category import Category
 from models.purchase_order_type import PurchaseOrderTypes
 from models.purchase_order_items import PurchaseOrderItems
 from models.purchase_order import PurchaseOrders
+from models.payment_terms import PaymentTerms
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.

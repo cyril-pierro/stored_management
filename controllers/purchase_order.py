@@ -1,6 +1,7 @@
 from models.purchase_order import PurchaseOrders
 from models.purchase_order_type import PurchaseOrderTypes
 from models.purchase_order_items import PurchaseOrderItems
+from models.payment_terms import PaymentTerms
 from utils.session import DBSession
 from utils.enum import PurchaseOrderStates
 from error import AppError
@@ -9,16 +10,23 @@ from schemas.purchase_order import (
     PurchaseOrderItemIn,
     PurchaseOrderIn,
     EditPurchaseOrderIn,
+    PaymentTermIn,
 )
+from schemas.stock import StockIn
+from controllers.stock import StockOperator
+from utils.filter_sort import FilterSort
+from controllers.operations import StaffOperator
 
 MESSAGE = "Purchase order item can only be created when in draft state"
 
 
 class PurchaseOrderController:
     @staticmethod
-    def get_all_purchase_orders():
+    def get_all_purchase_orders(q: dict):
         with DBSession() as db:
-            return db.query(PurchaseOrders).all()
+            q["sort"] = "-id"
+            filter_data = FilterSort(PurchaseOrders, q, db)
+            return filter_data.filter_and_sort()
 
     @staticmethod
     def get_purchase_order_types():
@@ -92,10 +100,52 @@ class PurchaseOrderController:
         return purchase_order.save(merge=True)
 
     @staticmethod
-    def update_state_of_purchase_order(id: int, state: PurchaseOrderStates):
+    def update_state_of_purchase_order(
+        id: int, state: PurchaseOrderStates, by_user_id: int
+    ):
         purchase_order = PurchaseOrderController.get_purchase_order_by_id(id)
+        if (
+            purchase_order.state.name == PurchaseOrderStates.validate.name
+            and StaffOperator.has_manager_permission(by_user_id)
+        ):
+            if state.name != PurchaseOrderStates.canceled.name:
+                raise AppError(
+                    message="Purchase order has already been validated", status_code=400
+                )
+            for purchase_order_items in purchase_order.purchase_order_items:
+                stock_id = purchase_order_items.stock_id
+                purchase_order_items.stock_id = None
+                purchase_order_items.save(merge=True)
+                try:
+                    StockOperator.remove_stock(stock_id)
+                except AppError as e:
+                    purchase_order_items.stock_id = stock_id
+                    purchase_order_items.save(merge=True)
+                    raise AppError(message=e.message, status_code=e.status_code) from e
+
+        if purchase_order.state.name == PurchaseOrderStates.canceled.name:
+            raise AppError(
+                message="Purchase order has already been canceled", status_code=400
+            )
+
         purchase_order.state = state.name
-        return purchase_order.save(merge=True)
+        purchase_order_done = purchase_order.save(merge=True)
+        if (
+            purchase_order_done.state.name == PurchaseOrderStates.validate.name
+            and StaffOperator.has_manager_permission(by_user_id)
+        ):
+            for purchase_order_item_data in purchase_order_done.purchase_order_items:
+                stock_in_data = StockIn(
+                    barcode_id=purchase_order_item_data.barcode_id,
+                    quantity=purchase_order_item_data.quantity,
+                    cost=purchase_order_item_data.price,
+                )
+                stock = StockOperator.add_stock(
+                    stock_in_data, purchase_order_item_data.requested_by
+                )
+                purchase_order_item_data.stock_id = stock.id
+                purchase_order_item_data.save(merge=True)
+        return purchase_order_done
 
     @staticmethod
     def delete_purchase_order(id: int):
@@ -106,6 +156,50 @@ class PurchaseOrderController:
                 status_code=400,
             )
         return value.delete(force=True)
+
+    @staticmethod
+    def get_purchase_order_by_event(
+        purchase_order_by_id: int, next: bool = False, prev: bool = False
+    ):
+        values = {}
+        with DBSession() as db:
+            data = (
+                db.query(PurchaseOrders)
+                .filter(PurchaseOrders.id == purchase_order_by_id)
+                .first()
+            )
+            if next:
+                next_value = (
+                    db.query(PurchaseOrders)
+                    .filter(PurchaseOrders.id > purchase_order_by_id)
+                    .order_by(PurchaseOrders.id)
+                    .first()
+                )
+                prev_value = (
+                    db.query(PurchaseOrders)
+                    .filter(PurchaseOrders.id < purchase_order_by_id)
+                    .order_by(PurchaseOrders.id.desc())
+                    .first()
+                )
+                values["next"] = next_value.id if next_value else bool(next_value)
+                values["prev"] = prev_value.id if prev_value else bool(prev_value)
+            if prev:
+                prev_value = (
+                    db.query(PurchaseOrders)
+                    .filter(PurchaseOrders.id < purchase_order_by_id)
+                    .order_by(PurchaseOrders.id)
+                    .first()
+                )
+                next_value = (
+                    db.query(PurchaseOrders)
+                    .filter(PurchaseOrders.id > purchase_order_by_id)
+                    .order_by(PurchaseOrders.id)
+                    .first()
+                )
+                values["prev"] = prev_value.id if prev_value else bool(prev_value)
+                values["next"] = next_value.id if next_value else bool(next_value)
+            values["current"] = data
+            return values
 
 
 class PurchaseOrderItemController:
@@ -172,3 +266,39 @@ class PurchaseOrderItemController:
                 status_code=400,
             )
         return value.delete(force=True)
+
+
+class PaymentTermsController:
+    @staticmethod
+    def get_payment_terms():
+        with DBSession() as db:
+            return db.query(PaymentTerms).all()
+
+    @staticmethod
+    def get_payment_term_by_id(payment_term_id: int):
+        with DBSession() as db:
+            value = (
+                db.query(PaymentTerms)
+                .filter(PaymentTerms.id == payment_term_id)
+                .first()
+            )
+            if not value:
+                raise AppError(message="Payment term does not exist", status_code=404)
+            return value
+
+    @staticmethod
+    def create_payment_term(data: PaymentTermIn):
+        payment_created = PaymentTerms(**data.model_dump())
+        return payment_created.save()
+
+    @staticmethod
+    def edit_payment_term(payment_term_id: int, data: PaymentTermIn):
+        payment = PaymentTermsController.get_payment_term_by_id(payment_term_id)
+        for key, value in data.model_dump().items():
+            setattr(payment, key, value)
+        return payment.save(merge=True)
+
+    @staticmethod
+    def delete_payment_term(payment_term_id: int):
+        payment = PaymentTermsController.get_payment_term_by_id(payment_term_id)
+        return payment.delete(force=True)

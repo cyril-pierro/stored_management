@@ -13,20 +13,23 @@ class PurchaseOrders(Base):
     __tablename__ = "purchase_orders"
     id = Column(sq.Integer, primary_key=True, unique=True, nullable=False)
     supplier_name = Column(sq.String, nullable=False)
-    payment_terms = Column(sq.String, nullable=False)
     state = Column(
         sq.Enum(PurchaseOrderStates),
         nullable=False,
         default=PurchaseOrderStates.draft.value,
     )
 
+    payment_term_id = Column(sq.Integer, ForeignKey(
+        "payment_terms.id"), nullable=False)
     order_type_id = Column(
         sq.Integer, ForeignKey("purchase_order_types.id"), nullable=False
     )
 
+    payment_terms = relationship(
+        "PaymentTerms", back_populates="purchase_orders")
     purchase_order_types = relationship("PurchaseOrderTypes")
     purchase_order_items = relationship(
-        "PurchaseOrderItems", back_populates="purchase_orders"
+        "PurchaseOrderItems", back_populates="purchase_orders", lazy="selectin"
     )
 
     created_at = Column(sq.DateTime, default=datetime.datetime.now())
@@ -55,7 +58,7 @@ class PurchaseOrders(Base):
         return {
             "id": self.id,
             "supplier_name": self.supplier_name,
-            "payment_terms": self.payment_terms,
+            "payment_terms": self.payment_terms.name,
             "state": self.state.name,
             "order_type_id": self.order_type_id,
             "order_type": self.purchase_order_types.name,

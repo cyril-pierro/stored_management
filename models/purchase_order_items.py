@@ -18,13 +18,18 @@ class PurchaseOrderItems(Base):
     price = Column(sq.Float, nullable=False)
     sub_total = Column(sq.Float, nullable=False)
 
+    stock_id = Column(
+        sq.Integer, ForeignKey("stocks.id"), nullable=True,
+    )
     purchase_order_id = Column(
         sq.Integer, ForeignKey("purchase_orders.id"), nullable=False
     )
     requested_by = Column(sq.Integer, ForeignKey("staffs.id"), nullable=False)
 
-    requested_by_staff = relationship(Staff, back_populates="purchase_order_items")
-    barcode = relationship("Barcode", back_populates="purchase_order_items")
+    requested_by_staff = relationship(
+        Staff, back_populates="purchase_order_items", lazy="selectin")
+    barcode = relationship(
+        "Barcode", back_populates="purchase_order_items", lazy="selectin")
     purchase_orders = relationship(
         "PurchaseOrders",
         back_populates="purchase_order_items",

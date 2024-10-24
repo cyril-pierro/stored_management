@@ -1,7 +1,12 @@
 from fastapi import APIRouter, Depends
 
 from controllers.auth import Auth
-from controllers.operations import DepartmentOperator, JobOperator, StaffOperator
+from controllers.operations import (
+    DepartmentOperator,
+    JobOperator,
+    StaffOperator,
+    GroupsOperator,
+)
 from error import AppError
 from models.email import Recipients
 from models.category import Category
@@ -15,9 +20,9 @@ from schemas.operations import (
     RolesOut,
     SuccessOut,
     CategoryIn,
-    CategoryOut
+    CategoryOut,
 )
-from schemas.staff import StaffIn, StaffOut, UpdateStaffIn
+from schemas.staff import StaffIn, StaffOut, UpdateStaffIn, GroupIn, GroupsOut
 from utils.common import bearer_schema
 
 PERMISSION_DENIED = "You do not have permission to perform this operation"
@@ -54,7 +59,9 @@ async def get_staff_roles():
 @op_router.get("/staff/{id}", response_model=StaffOut)
 async def get_staff_member(id: int, access_token: str = Depends(bearer_schema)):
     staff_id = Auth.verify_token(token=access_token.credentials, for_="login")
-    if StaffOperator.has_stock_controller_permission(staff_id=staff_id) or StaffOperator.has_engineer_permission(staff_id):
+    if StaffOperator.has_stock_controller_permission(
+        staff_id=staff_id
+    ) or StaffOperator.has_engineer_permission(staff_id):
         staff = StaffOperator.get_staff(id)
         if not staff:
             raise ValueError("No staff found")
@@ -90,8 +97,7 @@ async def remove_staff_member(id: int, access_token: str = Depends(bearer_schema
 
 @op_router.put("/staff/{id}", response_model=StaffOut)
 async def update_staff_member(
-    id: int, data: UpdateStaffIn,
-    access_token: str = Depends(bearer_schema)
+    id: int, data: UpdateStaffIn, access_token: str = Depends(bearer_schema)
 ):
     staff_id = Auth.verify_token(token=access_token.credentials, for_="login")
     if not StaffOperator.has_stock_controller_permission(staff_id=staff_id):
@@ -102,10 +108,48 @@ async def update_staff_member(
     return StaffOperator.update_staff_by_id(id, data)
 
 
-@op_router.get("/categories", response_model=list[CategoryOut])
-async def get_all_categories(
-    access_token: str = Depends(bearer_schema)
+@op_router.get("/staff/{id}/assign/{group_id}", response_model=StaffOut)
+def assign_staff_with_group_id(
+    id: int, group_id: int, access_token: str = Depends(bearer_schema)
 ):
+    staff_id = Auth.verify_token(token=access_token.credentials, for_="login")
+    if StaffOperator.has_stock_controller_permission(
+        staff_id=staff_id
+    ) or StaffOperator.has_manager_permission(staff_id):
+        return StaffOperator.assign_group_to_staff(staff_id=id, group_id=group_id)
+    raise AppError(
+        message=PERMISSION_DENIED,
+        status_code=401,
+    )
+
+
+@op_router.get("/staff/{id}/revoke", response_model=StaffOut)
+def revoke_user_from_any_group(
+    id: int, access_token: str = Depends(bearer_schema)
+):
+    staff_id = Auth.verify_token(token=access_token.credentials, for_="login")
+    if StaffOperator.has_stock_controller_permission(
+        staff_id=staff_id
+    ) or StaffOperator.has_manager_permission(staff_id):
+        return StaffOperator.remove_user_from_any_group(staff_id=id)
+    raise AppError(
+        message=PERMISSION_DENIED,
+        status_code=401,
+    )
+
+
+@op_router.get("/groups", response_model=list[GroupsOut])
+async def get_all_groups():
+    return GroupsOperator.all_groups()
+
+
+@op_router.get("/groups/{id}", response_model=GroupsOut)
+async def get_group_by_id(id: int):
+    return GroupsOperator.get_group(id)
+
+
+@op_router.get("/categories", response_model=list[CategoryOut])
+async def get_all_categories(access_token: str = Depends(bearer_schema)):
     staff_id = Auth.verify_token(token=access_token.credentials, for_="login")
     if not StaffOperator.has_stock_controller_permission(staff_id=staff_id):
         raise AppError(
@@ -116,10 +160,7 @@ async def get_all_categories(
 
 
 @op_router.post("/categories")
-async def create_category(
-    data: CategoryIn,
-    access_token: str = Depends(bearer_schema)
-):
+async def create_category(data: CategoryIn, access_token: str = Depends(bearer_schema)):
     staff_id = Auth.verify_token(token=access_token.credentials, for_="login")
     if not StaffOperator.has_stock_controller_permission(staff_id=staff_id):
         raise AppError(
@@ -131,8 +172,7 @@ async def create_category(
 
 @op_router.put("/categories/{category_id}", response_model=CategoryOut)
 async def update_category_by_id(
-    category_id: int, data: CategoryIn,
-    access_token: str = Depends(bearer_schema)
+    category_id: int, data: CategoryIn, access_token: str = Depends(bearer_schema)
 ):
     staff_id = Auth.verify_token(token=access_token.credentials, for_="login")
     if not StaffOperator.has_stock_controller_permission(staff_id=staff_id):
@@ -145,8 +185,7 @@ async def update_category_by_id(
 
 @op_router.delete("/categories/{category_id}", response_model=SuccessOut)
 async def delete_category_by_id(
-    category_id: int,
-    access_token: str = Depends(bearer_schema)
+    category_id: int, access_token: str = Depends(bearer_schema)
 ):
     staff_id = Auth.verify_token(token=access_token.credentials, for_="login")
     if not StaffOperator.has_stock_controller_permission(staff_id=staff_id):

@@ -21,11 +21,15 @@ class Staff(Base):
     id = Column(sq.Integer, primary_key=True, unique=True, index=True)
     name = Column(sq.String, nullable=False)
     staff_id_number = Column(sq.String, nullable=False, unique=True, index=True)
+    hash_password = Column(sq.String, nullable=False)
+
     job_id = Column(sq.Integer, ForeignKey("jobs.id"), nullable=False)
     department_id = Column(sq.Integer, ForeignKey("departments.id"), nullable=False)
     role_id = Column(sq.Integer, ForeignKey("roles.id"), nullable=False)
-    hash_password = Column(sq.String, nullable=False)
+    group_id = Column(sq.Integer, ForeignKey("groups.id"))
+
     job = relationship(Job, back_populates="staff", lazy="subquery")
+    groups = relationship("Groups", back_populates="staffs", lazy="subquery")
     department = relationship(Department, back_populates="staff", lazy="subquery")
     created_stocks = relationship(
         "Stock",
