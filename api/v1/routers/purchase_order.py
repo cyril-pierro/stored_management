@@ -184,24 +184,48 @@ def delete_purchase_order_item(
 
 
 @po_router.get("/payment-terms", response_model=list[PaymentTermsOut])
-def get_all_payment_terms():
-    return PaymentTermsController.get_payment_terms()
+def get_all_payment_terms(
+    access_token: str = Depends(bearer_schema)
+):
+    staff_id = Auth.verify_token(token=access_token.credentials, for_="login")
+    if StaffOperator.has_stock_controller_permission(staff_id=staff_id):
+        return PaymentTermsController.get_payment_terms()
+    raise AppError(message=PERMISSION_ERROR, status_code=401)
 
 
 @po_router.post("/payment-terms", response_model=PaymentTermsOut)
-def create_payment_term(data: PaymentTermIn):
-    return PaymentTermsController.create_payment_term(data)
+def create_payment_term(
+    data: PaymentTermIn,
+    access_token: str = Depends(bearer_schema)
+):
+    staff_id = Auth.verify_token(token=access_token.credentials, for_="login")
+    if StaffOperator.has_stock_controller_permission(staff_id=staff_id):
+        return PaymentTermsController.create_payment_term(data)
+    raise AppError(message=PERMISSION_ERROR, status_code=401)
 
 
 @po_router.put("/payment-terms/{id}", response_model=PaymentTermsOut)
-def modify_payment_term(id: int, data: PaymentTermIn):
-    return PaymentTermsController.edit_payment_term(id, data)
+def modify_payment_term(
+    id: int,
+    data: PaymentTermIn,
+    access_token: str = Depends(bearer_schema)
+):
+    staff_id = Auth.verify_token(token=access_token.credentials, for_="login")
+    if StaffOperator.has_stock_controller_permission(staff_id=staff_id):
+        return PaymentTermsController.edit_payment_term(id, data)
+    raise AppError(message=PERMISSION_ERROR, status_code=401)
 
 
 @po_router.delete("/payment-terms/{id}", response_model=SuccessOut)
-def delete_payment_term(id: int):
-    PaymentTermsController.delete_payment_term(id)
-    return {"message": "Payment term deleted successfully"}
+def delete_payment_term(
+    id: int,
+    access_token: str = Depends(bearer_schema)
+):
+    staff_id = Auth.verify_token(token=access_token.credentials, for_="login")
+    if StaffOperator.has_stock_controller_permission(staff_id=staff_id):
+        PaymentTermsController.delete_payment_term(id)
+        return {"message": "Payment term deleted successfully"}
+    raise AppError(message=PERMISSION_ERROR, status_code=401) 
 
 
 @po_router.get("/purchase-orders/{purchase_order_id}/generate", response_model=EventPurchaseOrdersOut)
@@ -209,9 +233,13 @@ def get_purchase_orders_details(
     purchase_order_id: int,
     prev: Optional[bool] = Query(None),
     next: Optional[bool] = Query(None),
+    access_token: str = Depends(bearer_schema)
 ):
-    return PurchaseOrderController.get_purchase_order_by_event(
-        purchase_order_id,
-        next=next,
-        prev=prev
-    )
+    staff_id = Auth.verify_token(token=access_token.credentials, for_="login")
+    if StaffOperator.has_stock_controller_permission(staff_id=staff_id):
+        return PurchaseOrderController.get_purchase_order_by_event(
+            purchase_order_id,
+            next=next,
+            prev=prev
+        )
+    raise AppError(message=PERMISSION_ERROR, status_code=401)
