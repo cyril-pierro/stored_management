@@ -46,6 +46,7 @@ def validation_for_db_errors(
     if "FATAL:  sorry, too many clients already" in error_msg:
         error_msg = "Internal Server Error"
         status_code = 500
+    print("error message", error_msg)
     return responses.JSONResponse(
         status_code=status_code,
         content={"message": error_msg}

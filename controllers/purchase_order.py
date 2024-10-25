@@ -104,9 +104,10 @@ class PurchaseOrderController:
         id: int, state: PurchaseOrderStates, by_user_id: int
     ):
         purchase_order = PurchaseOrderController.get_purchase_order_by_id(id)
+        is_manager = StaffOperator.has_manager_permission(by_user_id)
         if (
             purchase_order.state.name == PurchaseOrderStates.validate.name
-            and StaffOperator.has_manager_permission(by_user_id)
+            and is_manager
         ):
             if state.name != PurchaseOrderStates.canceled.name:
                 raise AppError(
@@ -132,7 +133,7 @@ class PurchaseOrderController:
         purchase_order_done = purchase_order.save(merge=True)
         if (
             purchase_order_done.state.name == PurchaseOrderStates.validate.name
-            and StaffOperator.has_manager_permission(by_user_id)
+            and is_manager
         ):
             for purchase_order_item_data in purchase_order_done.purchase_order_items:
                 stock_in_data = StockIn(
@@ -143,8 +144,7 @@ class PurchaseOrderController:
                 stock = StockOperator.add_stock(
                     stock_in_data, purchase_order_item_data.requested_by
                 )
-                purchase_order_item_data.stock_id = stock.id
-                purchase_order_item_data.save(merge=True)
+                purchase_order_item_data.update({"stock_id": stock.id})
         return purchase_order_done
 
     @staticmethod

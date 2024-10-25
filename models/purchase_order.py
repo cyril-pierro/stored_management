@@ -46,6 +46,14 @@ class PurchaseOrders(Base):
             db.refresh(self)
             return self
 
+    def update(self, data: dict) -> "PurchaseOrders":
+        with DBSession() as db:
+            db.query(PurchaseOrders).filter(
+                PurchaseOrders.id == self.id
+            ).update(data)
+            db.commit()
+            return self
+
     def delete(self, force=False) -> bool:
         with DBSession() as db:
             if force:

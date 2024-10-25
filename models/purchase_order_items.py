@@ -12,14 +12,16 @@ from models.staff import Staff
 class PurchaseOrderItems(Base):
     __tablename__ = "purchase_order_items"
     id = Column(sq.Integer, primary_key=True, unique=True, nullable=False)
-    barcode_id = Column(sq.Integer, ForeignKey("barcodes.id"), nullable=False)
     supplier_code = Column(sq.String, nullable=False)
     quantity = Column(sq.Integer, nullable=False)
     price = Column(sq.Float, nullable=False)
     sub_total = Column(sq.Float, nullable=False)
 
+    barcode_id = Column(sq.Integer, ForeignKey("barcodes.id"), nullable=False)
     stock_id = Column(
-        sq.Integer, ForeignKey("stocks.id"), nullable=True,
+        sq.Integer,
+        ForeignKey("stocks.id"),
+        nullable=True,
     )
     purchase_order_id = Column(
         sq.Integer, ForeignKey("purchase_orders.id"), nullable=False
@@ -27,9 +29,11 @@ class PurchaseOrderItems(Base):
     requested_by = Column(sq.Integer, ForeignKey("staffs.id"), nullable=False)
 
     requested_by_staff = relationship(
-        Staff, back_populates="purchase_order_items", lazy="selectin")
+        Staff, back_populates="purchase_order_items", lazy="selectin"
+    )
     barcode = relationship(
-        "Barcode", back_populates="purchase_order_items", lazy="selectin")
+        "Barcode", back_populates="purchase_order_items", lazy="selectin"
+    )
     purchase_orders = relationship(
         "PurchaseOrders",
         back_populates="purchase_order_items",
@@ -47,6 +51,14 @@ class PurchaseOrderItems(Base):
             db.add(self)
             db.commit()
             db.refresh(self)
+        return self
+
+    def update(self, data: dict):
+        with DBSession() as db:
+            db.query(PurchaseOrderItems).filter(
+                PurchaseOrderItems.id == self.id
+            ).update(data)
+            db.commit()
             return self
 
     def delete(self, force=False) -> bool:

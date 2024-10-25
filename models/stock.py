@@ -11,13 +11,15 @@ from utils.session import DBSession
 class Stock(Base):
     __tablename__ = "stocks"
     id = Column(sq.Integer, primary_key=True, unique=True, index=True)
-    barcode_id = Column(sq.Integer, ForeignKey("barcodes.id"), nullable=False)
     quantity = Column(sq.Integer, default=0)
     quantity_initiated = Column(sq.Integer, nullable=False, default=0, server_default="0")
     sold = Column(sq.Boolean, default=False)
     cost = Column(sq.Float, nullable=False)
+
+    barcode_id = Column(sq.Integer, ForeignKey("barcodes.id"), nullable=False)
     created_by = Column(sq.Integer, ForeignKey("staffs.id"))
     updated_by = Column(sq.Integer, ForeignKey("staffs.id"))
+    
     creator = relationship(
         "Staff",
         foreign_keys=[created_by],
