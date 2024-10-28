@@ -52,7 +52,10 @@ class PurchaseOrders(Base):
                 PurchaseOrders.id == self.id
             ).update(data)
             db.commit()
-            return self
+            value = db.query(PurchaseOrders).filter(
+                PurchaseOrders.id == self.id
+            ).first()
+            return value
 
     def delete(self, force=False) -> bool:
         with DBSession() as db:

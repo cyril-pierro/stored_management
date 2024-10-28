@@ -47,7 +47,7 @@ class StockOperator:
     @staticmethod
     def get_all_stocks():
         with DBSession() as db:
-            return db.query(Stock).order_by(Stock.id.desc()).all()
+            return db.query(Stock).filter(Stock.cancelled.is_(False)).order_by(Stock.id.desc()).all()
 
     @staticmethod
     def get_all_barcodes():
@@ -142,7 +142,7 @@ class StockOperator:
     def get_all_stocks_not_sold(barcode_id: int) -> list[Stock]:
         with DBSession() as db:
             return db.query(Stock)\
-                .filter(and_(Stock.barcode_id == barcode_id, Stock.sold.is_(False)))\
+                .filter(and_(Stock.barcode_id == barcode_id, Stock.sold.is_(False), Stock.cancelled.is_(False)))\
                 .order_by(Stock.id.asc())\
                 .all()
 
@@ -171,6 +171,7 @@ class StockOperator:
                     func.array_agg(Stock.cost).label("cost_list"),
                 )
                 .join(Stock, Barcode.id == Stock.barcode_id)
+                .filter(Stock.cancelled.is_(False))
                 .group_by(Barcode)
             )
         return parse_stock_data(query.all())
@@ -198,7 +199,7 @@ class StockOperator:
                     func.sum(Stock.cost * Stock.quantity_initiated),
                 )
                 .join(Stock, Barcode.id == Stock.barcode_id)
-                .filter(Barcode.barcode == barcode)
+                .filter(and_(Barcode.barcode == barcode, Stock.cancelled.is_(False)))
                 .group_by(Barcode)
             )
         return parse_stock_data(query.one_or_none())
@@ -236,6 +237,7 @@ class StockOperator:
                 .filter(
                     and_(
                         Stock.barcode.has(Barcode.barcode == barcode),
+                        Stock.cancelled.is_(False),
                         condition
                     )
             ).order_by(Stock.id.asc()).all()
@@ -243,7 +245,7 @@ class StockOperator:
     @staticmethod
     def get_stock_by(id_or_barcode: Union[str, int]):
         with DBSession() as db:
-            return db.query(Stock).filter(Stock.id == id_or_barcode).first()
+            return db.query(Stock).filter(and_(Stock.id == id_or_barcode, Stock.cancelled.is_(False))).first()
 
     @staticmethod
     def get_barcode(barcode: Union[str, int]):
@@ -300,6 +302,19 @@ class StockOperator:
             )
             db.delete(stock_found)
             db.commit()
+        return True
+
+    @staticmethod
+    def mark_stock_as_cancelled(stock_id: int) -> bool:
+        stock_found = StockOperator.get_stock_by(stock_id)
+        if not stock_found:
+            raise AppError(message="Stock not found", status_code=404)
+        stock_found.update({"cancelled": True})
+        barcode_value = stock_found.barcode.barcode
+        SR.handle_cancelled_stocks(
+            barcode=barcode_value,
+            quantity=stock_found.quantity_initiated,
+        )
         return True
 
 

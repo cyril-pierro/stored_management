@@ -77,6 +77,16 @@ class StockRunningOperator:
             )
             new_running_stock.cost = total_cost
             return new_running_stock.save()
+        
+    @staticmethod
+    def handle_cancelled_stocks(barcode: str, quantity: int):
+        existing_stock = StockRunningOperator.get_stock_in_inventory(barcode)
+        if existing_stock:
+            StockRunningOperator.update_stock(
+                existing_stock,
+                order_quantity=quantity,
+                should_delete_quantity=True
+            ).save(merge=True)
 
     @staticmethod
     def update_stock(

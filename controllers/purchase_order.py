@@ -118,7 +118,8 @@ class PurchaseOrderController:
                 purchase_order_items.stock_id = None
                 purchase_order_items.save(merge=True)
                 try:
-                    StockOperator.remove_stock(stock_id)
+                    # StockOperator.remove_stock(stock_id=stock_id)
+                    StockOperator.mark_stock_as_cancelled(stock_id)
                 except AppError as e:
                     purchase_order_items.stock_id = stock_id
                     purchase_order_items.save(merge=True)
@@ -128,9 +129,7 @@ class PurchaseOrderController:
             raise AppError(
                 message="Purchase order has already been canceled", status_code=400
             )
-
-        purchase_order.state = state.name
-        purchase_order_done = purchase_order.save(merge=True)
+        purchase_order_done = purchase_order.update({"state": state.name})
         if (
             purchase_order_done.state.name == PurchaseOrderStates.validate.name
             and is_manager
