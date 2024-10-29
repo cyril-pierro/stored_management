@@ -26,12 +26,12 @@ def upgrade() -> None:
         rows=[
             {
                 "id": 1,
-                "name": GroupStates.managers.name,
+                "name": GroupStates.managers.value,
                 "created_at": datetime.now()
             },
             {
                 "id": 2,
-                "name": GroupStates.users.name,
+                "name": GroupStates.users.value,
                 "created_at": datetime.now()
             }
         ]

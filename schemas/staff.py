@@ -30,7 +30,7 @@ class Staff(BaseModel):
     job: JobOut
     department: DepartmentOut
     roles: RolesOut
-    groups: GroupsOut
+    groups: Optional[GroupsOut] = None
 
     class Config:
         from_attributes = True
