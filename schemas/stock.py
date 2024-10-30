@@ -155,3 +155,12 @@ class StockQuery(BaseModel):
     from_value: Union[Optional[int], None] = Query(None)
     to_value: Union[Optional[int],None] = Query(None)
     sorted: Union[Optional[bool], None] = Query(None)
+
+
+class CostEvaluationOut(BaseModel):
+    id: int
+    barcode: Barcode
+    quantity: int
+    cost: float
+    total: float
+    created_at: datetime
