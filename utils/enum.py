@@ -19,7 +19,7 @@ class RolesStatus(Enum):
 class PurchaseOrderStates(Enum):
     draft = "draft"
     sent = "sent"
-    validate = "validate"
+    validated = "validated"
     canceled = "canceled"
 
 

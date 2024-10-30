@@ -2,6 +2,7 @@ from models.purchase_order import PurchaseOrders
 from models.purchase_order_type import PurchaseOrderTypes
 from models.purchase_order_items import PurchaseOrderItems
 from models.payment_terms import PaymentTerms
+from models.suppliers import Suppliers
 from utils.session import DBSession
 from utils.enum import PurchaseOrderStates
 from error import AppError
@@ -11,6 +12,7 @@ from schemas.purchase_order import (
     PurchaseOrderIn,
     EditPurchaseOrderIn,
     PaymentTermIn,
+    SuppliersIn
 )
 from schemas.stock import StockIn
 from controllers.stock import StockOperator
@@ -52,7 +54,8 @@ class PurchaseOrderController:
     def get_purchase_order_type_by_id(id: int) -> PurchaseOrderTypes:
         with DBSession() as db:
             value = (
-                db.query(PurchaseOrderTypes).filter(PurchaseOrderTypes.id == id).first()
+                db.query(PurchaseOrderTypes).filter(
+                    PurchaseOrderTypes.id == id).first()
             )
             if not value:
                 raise AppError(
@@ -84,7 +87,8 @@ class PurchaseOrderController:
         purchase_order_items = saved_data.pop("purchase_order_items")
         purchase_order = PurchaseOrders(**saved_data)
         for item in purchase_order_items:
-            purchase_order.purchase_order_items.append(PurchaseOrderItems(**item))
+            purchase_order.purchase_order_items.append(
+                PurchaseOrderItems(**item))
         return purchase_order.save()
 
     @staticmethod
@@ -106,7 +110,7 @@ class PurchaseOrderController:
         purchase_order = PurchaseOrderController.get_purchase_order_by_id(id)
         is_manager = StaffOperator.has_manager_permission(by_user_id)
         if (
-            purchase_order.state.name == PurchaseOrderStates.validate.name
+            purchase_order.state.name == PurchaseOrderStates.validated.name
             and is_manager
         ):
             if state.name != PurchaseOrderStates.canceled.name:
@@ -123,7 +127,8 @@ class PurchaseOrderController:
                 except AppError as e:
                     purchase_order_items.stock_id = stock_id
                     purchase_order_items.save(merge=True)
-                    raise AppError(message=e.message, status_code=e.status_code) from e
+                    raise AppError(message=e.message,
+                                   status_code=e.status_code) from e
 
         if purchase_order.state.name == PurchaseOrderStates.canceled.name:
             raise AppError(
@@ -131,7 +136,7 @@ class PurchaseOrderController:
             )
         purchase_order_done = purchase_order.update({"state": state.name})
         if (
-            purchase_order_done.state.name == PurchaseOrderStates.validate.name
+            purchase_order_done.state.name == PurchaseOrderStates.validated.name
             and is_manager
         ):
             for purchase_order_item_data in purchase_order_done.purchase_order_items:
@@ -180,8 +185,10 @@ class PurchaseOrderController:
                     .order_by(PurchaseOrders.id.desc())
                     .first()
                 )
-                values["next"] = next_value.id if next_value else bool(next_value)
-                values["prev"] = prev_value.id if prev_value else bool(prev_value)
+                values["next"] = next_value.id if next_value else bool(
+                    next_value)
+                values["prev"] = prev_value.id if prev_value else bool(
+                    prev_value)
             if prev:
                 prev_value = (
                     db.query(PurchaseOrders)
@@ -195,8 +202,10 @@ class PurchaseOrderController:
                     .order_by(PurchaseOrders.id)
                     .first()
                 )
-                values["prev"] = prev_value.id if prev_value else bool(prev_value)
-                values["next"] = next_value.id if next_value else bool(next_value)
+                values["prev"] = prev_value.id if prev_value else bool(
+                    prev_value)
+                values["next"] = next_value.id if next_value else bool(
+                    next_value)
             values["current"] = data
             return values
 
@@ -221,7 +230,8 @@ class PurchaseOrderItemController:
     def get_purchase_order_item_by_id(id: int):
         with DBSession() as db:
             value = (
-                db.query(PurchaseOrderItems).filter(PurchaseOrderItems.id == id).first()
+                db.query(PurchaseOrderItems).filter(
+                    PurchaseOrderItems.id == id).first()
             )
             if not value:
                 raise AppError(
@@ -282,7 +292,8 @@ class PaymentTermsController:
                 .first()
             )
             if not value:
-                raise AppError(message="Payment term does not exist", status_code=404)
+                raise AppError(
+                    message="Payment term does not exist", status_code=404)
             return value
 
     @staticmethod
@@ -292,12 +303,46 @@ class PaymentTermsController:
 
     @staticmethod
     def edit_payment_term(payment_term_id: int, data: PaymentTermIn):
-        payment = PaymentTermsController.get_payment_term_by_id(payment_term_id)
+        payment = PaymentTermsController.get_payment_term_by_id(
+            payment_term_id)
         for key, value in data.model_dump().items():
             setattr(payment, key, value)
         return payment.save(merge=True)
 
     @staticmethod
     def delete_payment_term(payment_term_id: int):
-        payment = PaymentTermsController.get_payment_term_by_id(payment_term_id)
+        payment = PaymentTermsController.get_payment_term_by_id(
+            payment_term_id)
         return payment.delete(force=True)
+
+
+class SupplierController:
+    @staticmethod
+    def create_supplier(data: SuppliersIn):
+        supplier_saved = Suppliers(**data.model_dump())
+        return supplier_saved.save()
+    
+    @staticmethod
+    def get_all_suppliers():
+        with DBSession() as db:
+            return db.query(Suppliers).all()
+
+    @staticmethod
+    def get_supplier_by_id(supplier_id: int) -> Suppliers:
+        with DBSession() as db:
+            supplier_found = db.query(Suppliers).filter(
+                Suppliers.id == supplier_id).first()
+            if not supplier_found:
+                raise AppError(message="Supplier not found", status_code=404)
+            return supplier_found
+
+    @staticmethod
+    def update_supplier_by_id(supplier_id: int, data: SuppliersIn) -> Suppliers:
+        found_supplier = SupplierController.get_supplier_by_id(supplier_id)
+        return found_supplier.update(data.model_dump())
+
+    @staticmethod
+    def delete_supplier_by_id(supplier_id: int) -> bool:
+        found_supplier = SupplierController.get_supplier_by_id(supplier_id)
+        found_supplier.delete(force=True)
+        return True

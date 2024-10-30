@@ -65,15 +65,23 @@ class PurchaseOrderItemOut(PurchaseOrderItemIn):
         from_attributes = True
 
 
+class SuppliersIn(BaseModel):
+    name: str
+
+
+class SuppliersOut(SuppliersIn):
+    id: int
+
+
 class PurchaseOrderIn(BaseModel):
-    supplier_name: str
+    supplier_id: int
     payment_term_id: int
     order_type_id: int
     purchase_order_items: list[PurchaseOrderItemIn]
 
 
 class PurchaseOrderQueryIn(BaseModel):
-    supplier_name: Union[str, None] = Query(default=None)
+    supplier_id: Union[int, None] = Query(default=None)
     created_at_max: Union[str, None] = Query(default=None)
     created_at_min:  Union[str, None] = Query(default=None)
     state:  Union[PurchaseOrderStates, None] = Query(default=None)
@@ -94,17 +102,17 @@ class PaymentTermsOut(BaseModel):
 
 
 class EditPurchaseOrderIn(BaseModel):
-    supplier_name: str
+    supplier_id: int
     payment_term_id: int
     order_type_id: int
 
 
 class PurchaseOrderOut(PurchaseOrderIn):
     id: int
-    supplier_name: str
     payment_terms: PaymentTermsOut
     state: PurchaseOrderStates
     order_type_id: int
+    suppliers: SuppliersOut
     purchase_order_items: list[PurchaseOrderItemOut]
     created_at: datetime
 

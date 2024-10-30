@@ -2,7 +2,8 @@ from fastapi import APIRouter, Depends, Query
 from controllers.purchase_order import (
     PurchaseOrderController,
     PurchaseOrderItemController,
-    PaymentTermsController
+    PaymentTermsController,
+    SupplierController
 )
 from schemas.purchase_order import (
     PurchaseOrderTypeIn,
@@ -16,7 +17,9 @@ from schemas.purchase_order import (
     PurchaseOrderQueryIn,
     PaymentTermIn,
     PaymentTermsOut,
-    EventPurchaseOrdersOut
+    EventPurchaseOrdersOut,
+    SuppliersOut,
+    SuppliersIn
 )
 from schemas.operations import SuccessOut
 from controllers.auth import Auth
@@ -225,7 +228,7 @@ def delete_payment_term(
     if StaffOperator.has_stock_controller_permission(staff_id=staff_id):
         PaymentTermsController.delete_payment_term(id)
         return {"message": "Payment term deleted successfully"}
-    raise AppError(message=PERMISSION_ERROR, status_code=401) 
+    raise AppError(message=PERMISSION_ERROR, status_code=401)
 
 
 @po_router.get("/purchase-orders/{purchase_order_id}/generate", response_model=EventPurchaseOrdersOut)
@@ -242,4 +245,60 @@ def get_purchase_orders_details(
             next=next,
             prev=prev
         )
+    raise AppError(message=PERMISSION_ERROR, status_code=401)
+
+
+@po_router.get("/suppliers", response_model=list[SuppliersOut])
+def get_all_suppliers(
+    access_token: str = Depends(bearer_schema)
+):
+    staff_id = Auth.verify_token(token=access_token.credentials, for_="login")
+    if StaffOperator.has_stock_controller_permission(staff_id=staff_id):
+        return SupplierController.get_all_suppliers()
+    raise AppError(message=PERMISSION_ERROR, status_code=401)
+
+
+@po_router.get("/suppliers/{supplier_id}", response_model=SuppliersOut)
+def get_supplier_by_id(
+    supplier_id: int,
+    access_token: str = Depends(bearer_schema)
+):
+    staff_id = Auth.verify_token(token=access_token.credentials, for_="login")
+    if StaffOperator.has_stock_controller_permission(staff_id=staff_id):
+        return SupplierController.get_supplier_by_id(supplier_id)
+    raise AppError(message=PERMISSION_ERROR, status_code=401)
+
+
+@po_router.post("/suppliers", response_model=SuppliersOut)
+def create_supplier(
+    data: SuppliersIn,
+    access_token: str = Depends(bearer_schema)
+):
+    staff_id = Auth.verify_token(token=access_token.credentials, for_="login")
+    if StaffOperator.has_stock_controller_permission(staff_id=staff_id):
+        return SupplierController.create_supplier(data)
+    raise AppError(message=PERMISSION_ERROR, status_code=401)
+
+
+@po_router.put("/suppliers/{supplier_id}", response_model=SuppliersOut)
+def update_supplier(
+    supplier_id: int,
+    data: SuppliersIn,
+    access_token: str = Depends(bearer_schema)
+):
+    staff_id = Auth.verify_token(token=access_token.credentials, for_="login")
+    if StaffOperator.has_stock_controller_permission(staff_id=staff_id):
+        return SupplierController.update_supplier_by_id(supplier_id, data)
+    raise AppError(message=PERMISSION_ERROR, status_code=401)
+
+
+@po_router.delete("/suppliers/{supplier_id}", response_model=SuccessOut)
+def delete_supplier(
+    supplier_id: int,
+    access_token: str = Depends(bearer_schema)
+):
+    staff_id = Auth.verify_token(token=access_token.credentials, for_="login")
+    if StaffOperator.has_stock_controller_permission(staff_id=staff_id):
+        SupplierController.delete_supplier_by_id(supplier_id)
+        return {"message": "Supplier deleted successfully"}
     raise AppError(message=PERMISSION_ERROR, status_code=401)

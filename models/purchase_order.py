@@ -12,13 +12,14 @@ from utils.enum import PurchaseOrderStates
 class PurchaseOrders(Base):
     __tablename__ = "purchase_orders"
     id = Column(sq.Integer, primary_key=True, unique=True, nullable=False)
-    supplier_name = Column(sq.String, nullable=False)
     state = Column(
         sq.Enum(PurchaseOrderStates),
         nullable=False,
         default=PurchaseOrderStates.draft.value,
     )
 
+    supplier_id = Column(sq.Integer, ForeignKey(
+        "suppliers.id"), nullable=False)
     payment_term_id = Column(sq.Integer, ForeignKey(
         "payment_terms.id"), nullable=False)
     order_type_id = Column(
@@ -31,6 +32,8 @@ class PurchaseOrders(Base):
     purchase_order_items = relationship(
         "PurchaseOrderItems", back_populates="purchase_orders", lazy="selectin"
     )
+    suppliers = relationship(
+        "Suppliers", back_populates="purchase_orders", lazy="selectin")
 
     created_at = Column(sq.DateTime, default=datetime.datetime.now())
     updated_at = Column(
@@ -68,7 +71,7 @@ class PurchaseOrders(Base):
     def json(self):
         return {
             "id": self.id,
-            "supplier_name": self.supplier_name,
+            "suppliers": self.suppliers,
             "payment_terms": self.payment_terms.name,
             "state": self.state.name,
             "order_type_id": self.order_type_id,

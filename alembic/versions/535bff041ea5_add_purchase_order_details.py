@@ -53,7 +53,7 @@ def upgrade() -> None:
         sa.Column("payment_terms", sa.String(), nullable=False),
         sa.Column(
             "state",
-            sa.Enum("draft", "sent", "validate", "canceled", name="purchaseorderstates"),
+            sa.Enum("draft", "sent", "validated", "canceled", name="purchaseorderstates"),
             nullable=False,
         ),
         sa.Column("order_type_id", sa.Integer(), nullable=False),
