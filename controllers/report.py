@@ -4,6 +4,7 @@ from models.stock_adjustment import StockAdjustment
 from models.order import Orders
 from models.barcode import Barcode
 from models.stock import Stock
+from models.purchase_order import PurchaseOrders
 from controllers.stock_running import StockRunningOperator
 from controllers.stock_out import StockOutOperator
 from controllers.stock import StockOperator
@@ -403,3 +404,31 @@ class ReportDashboard:
                     for stock in stock_adj
                 ] if stock_adj else [],
             }
+
+    @staticmethod
+    def get_supplier_analysis_report_by_id(
+        supplier_id: int,
+        from_: Any = None,
+        to_: Any = None,
+    ):
+        filters = []
+        if from_:
+            from_datetime = datetime.strptime(from_, "%Y-%m-%d")
+            filters.append(
+                PurchaseOrders.created_at
+                >= from_datetime + timedelta(hours=0, minutes=0, seconds=0)
+            )
+        if to_:
+            to_datetime = datetime.strptime(to_, "%Y-%m-%d")
+            filters.append(
+                PurchaseOrders.created_at
+                <= to_datetime + timedelta(hours=23, minutes=59, seconds=59)
+            )
+        with DBSession() as db:
+            return db.query(PurchaseOrders) \
+                .filter(
+                    PurchaseOrders.supplier_id == supplier_id,
+                    and_(
+                        *filters)
+                ).all()
+

@@ -9,6 +9,7 @@ from schemas.report import (
     ErmReportOut, ErmQuantityOut,
     MonthlyCollectionOut
 )
+from schemas.purchase_order import PurchaseOrderOut
 from datetime import datetime
 from typing import Optional
 
@@ -121,6 +122,23 @@ async def get_analysis_report_by_department(
         raise AppError(message=PERMISSION_ERROR, status_code=401)
     return ReportDashboard.get_analysis_report_by_department(
         department_id=department_id,
+        from_=from_,
+        to_=to_
+    )
+
+
+@op_router.get("/analysis/purchase-orders/{supplier_id}", response_model=list[PurchaseOrderOut])
+async def get_analysis_for_purchase_orders_for_supplier(
+    supplier_id: int,
+    from_: Optional[str] = Query(None),
+    to_: Optional[str] = Query(None),
+    access_token: str = Depends(bearer_schema)
+):
+    staff_id = Auth.verify_token(token=access_token.credentials, for_="login")
+    if not StaffOperator.has_stock_controller_permission(staff_id=staff_id):
+        raise AppError(message=PERMISSION_ERROR, status_code=401)
+    return ReportDashboard.get_supplier_analysis_report_by_id(
+        supplier_id=supplier_id,
         from_=from_,
         to_=to_
     )
